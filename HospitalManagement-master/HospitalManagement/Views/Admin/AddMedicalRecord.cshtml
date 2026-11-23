@@ -1,7 +1,6 @@
 @model AddmedicalRecordVM
 @{
     ViewData["Title"] = "Create medical";
-    Layout = "_MainLayout";
     SelectList DoctorselectListItems = new SelectList(Model.Doctors, "Id", "FirstName");
     SelectList PatientselectListItems = new SelectList(Model.patients, "Id", "FirstName");
 }

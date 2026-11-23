@@ -15,7 +15,7 @@ namespace HospitalManagement.Controllers;
 /// Billing workspace: invoices, payments and refunds. Clinical and financial permissions are
 /// deliberately separate, and large refunds require a second officer's approval.
 /// </summary>
-[Authorize(Policy = "perm:" + Permission.BillingView)]
+[Authorize]
 public sealed class BillingController(
     IBillingService billing,
     IWorkspaceService workspace,
@@ -28,9 +28,22 @@ public sealed class BillingController(
 
     public async Task<IActionResult> Index(string? status, DateOnly? from, DateOnly? to, string? term, int page = 1, CancellationToken cancellationToken = default)
     {
-        InvoiceStatus? parsed = Enum.TryParse<InvoiceStatus>(status, true, out var value) ? value : null;
-        var range = new DateRange(from, to);
-        var result = await billing.QueryAsync(parsed, range, term, page, 20, cancellationToken);
+        if (!User.HasClaim(AppClaimTypes.Permission, Permission.BillingView) && !User.IsInRole(nameof(Role.Patient)))
+        {
+            return Forbid();
+        }
+
+        PagedResult<InvoiceListItem> result;
+        if (User.IsInRole(nameof(Role.Patient)))
+        {
+            result = await billing.ForPatientAsync(CurrentUserId(), page, 20, cancellationToken);
+        }
+        else
+        {
+            InvoiceStatus? parsed = Enum.TryParse<InvoiceStatus>(status, true, out var value) ? value : null;
+            var range = new DateRange(from, to);
+            result = await billing.QueryAsync(parsed, range, term, page, 20, cancellationToken);
+        }
 
         ViewData["Title"] = "Billing";
         ViewData["Section"] = "Administration";
@@ -57,6 +70,11 @@ public sealed class BillingController(
         if (invoice is null)
         {
             return NotFound();
+        }
+
+        if (User.IsInRole(nameof(Role.Patient)) && invoice.PatientId != CurrentUserId())
+        {
+            return Forbid();
         }
 
         await audit.RecordAsync("invoice.view", CurrentUserId(), invoice.PatientId, "Invoice", id.ToString(), cancellationToken);

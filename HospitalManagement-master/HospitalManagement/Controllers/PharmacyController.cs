@@ -25,13 +25,18 @@ public sealed class PharmacyController(
     private bool CanDispense => User.HasClaim(AppClaimTypes.Permission, Permission.PrescriptionDispense);
     private bool CanPrescribe => User.HasClaim(AppClaimTypes.Permission, Permission.PrescriptionCreate);
 
-    [Authorize(Policy = "perm:" + Permission.PrescriptionReview)]
     public async Task<IActionResult> Index(string? status, string? term, int page = 1, CancellationToken cancellationToken = default)
     {
         var query = dbContext.Prescriptions.AsNoTracking()
             .Include(p => p.Patient)
             .Include(p => p.Items).ThenInclude(i => i.Medication)
             .AsQueryable();
+
+        if (User.IsInRole(nameof(Role.Patient)))
+        {
+            var patientId = CurrentUserId();
+            query = query.Where(p => p.PatientId == patientId);
+        }
 
         if (Enum.TryParse<PrescriptionStatus>(status, true, out var parsed))
         {

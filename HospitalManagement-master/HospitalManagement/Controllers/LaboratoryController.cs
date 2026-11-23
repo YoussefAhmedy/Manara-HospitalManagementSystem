@@ -16,7 +16,7 @@ namespace HospitalManagement.Controllers;
 /// Laboratory workspace. Specimen collection, result entry, verification and release are
 /// separate permissions, and a result is only clinically final once released.
 /// </summary>
-[Authorize(Policy = "perm:" + Permission.LabCollect)]
+[Authorize]
 public sealed class LaboratoryController(
     ILabService lab,
     IWorkspaceService workspace,
@@ -27,6 +27,11 @@ public sealed class LaboratoryController(
 
     public async Task<IActionResult> Index(string? status, string? term, string? patientId, int page = 1, CancellationToken cancellationToken = default)
     {
+        if (User.IsInRole(nameof(Role.Patient)))
+        {
+            patientId = CurrentUserId();
+        }
+
         LabOrderStatus? parsed = Enum.TryParse<LabOrderStatus>(status, true, out var value) ? value : null;
         var result = await lab.QueryAsync(parsed, patientId, new DateRange(null, null), term, page, 20, cancellationToken);
 
@@ -50,6 +55,11 @@ public sealed class LaboratoryController(
         if (order is null)
         {
             return NotFound();
+        }
+
+        if (User.IsInRole(nameof(Role.Patient)) && order.PatientId != CurrentUserId())
+        {
+            return Forbid();
         }
 
         await audit.RecordAsync("lab.order.view", CurrentUserId(), order.PatientId, "LabOrder", id.ToString(), cancellationToken);

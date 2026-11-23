@@ -3,7 +3,6 @@
 
 @{
     ViewData["Title"] = "getDoctorDetails";
-    Layout = "_MainLayout";
     SelectList selectListItems = new SelectList(Model.specializations, "Id", "Name", Model.SpecializationId);
 }
 

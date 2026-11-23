@@ -1,7 +1,6 @@
 @model CreateDoctorViewModel
 @{
     ViewData["Title"] = "CreateDoctor";
-    Layout = "_MainLayout";
     SelectList selectListItems = new SelectList(Model.Specializations, "Id", "Name");
 }
 

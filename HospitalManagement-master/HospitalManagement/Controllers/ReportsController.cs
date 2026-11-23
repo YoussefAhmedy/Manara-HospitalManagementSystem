@@ -13,7 +13,7 @@ namespace HospitalManagement.Controllers;
 /// Parameterised reporting. The HTML view, the print layout and the CSV export all consume
 /// the same <see cref="ReportResult"/> produced by live queries.
 /// </summary>
-[Authorize(Policy = "perm:" + Permission.ReportView)]
+[Authorize]
 public sealed class ReportsController(
     IReportService reports,
     IOrganizationDirectoryService directory,
@@ -23,6 +23,16 @@ public sealed class ReportsController(
 
     public IActionResult Index()
     {
+        if (User.IsInRole(nameof(Role.Patient)))
+        {
+            return RedirectToAction(nameof(ExaminationReport));
+        }
+
+        if (!User.HasClaim(AppClaimTypes.Permission, Permission.ReportView))
+        {
+            return Forbid();
+        }
+
         ViewData["Title"] = "Reports";
         ViewData["Section"] = "Governance";
         ViewData["Subtitle"] = "Operational, clinical and financial reporting generated from live data.";
@@ -108,7 +118,7 @@ public sealed class ReportsController(
         await audit.RecordAsync("report.export", CurrentUserId(), null, "Report", key, cancellationToken);
 
         var csv = reports.ToCsv(result);
-        var fileName = $"careaxis-{key}-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv";
+        var fileName = $"manara-{key}-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv";
         return File(new UTF8Encoding(true).GetBytes(csv), "text/csv", fileName);
     }
 }

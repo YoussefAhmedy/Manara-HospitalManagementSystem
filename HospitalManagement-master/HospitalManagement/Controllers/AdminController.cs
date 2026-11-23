@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace HospitalManagement.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,HospitalAdmin,SuperAdmin")]
     public class AdminController : Controller
     {
         private readonly IMapper mapper;

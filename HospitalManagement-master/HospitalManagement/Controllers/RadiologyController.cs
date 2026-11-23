@@ -13,7 +13,7 @@ namespace HospitalManagement.Controllers;
 /// Radiology worklist. Findings and impressions are written by the radiologist; the system
 /// never generates clinical text. A report is only final after verification and release.
 /// </summary>
-[Authorize(Policy = "perm:" + Permission.ImagingView)]
+[Authorize]
 public sealed class RadiologyController(
     IImagingService imaging,
     IAuditLogger audit) : Controller
@@ -22,6 +22,11 @@ public sealed class RadiologyController(
 
     public async Task<IActionResult> Index(string? status, string? term, int page = 1, CancellationToken cancellationToken = default)
     {
+        if (!User.HasClaim(AppClaimTypes.Permission, Permission.ImagingView) && !User.IsInRole(nameof(Role.Patient)))
+        {
+            return Forbid();
+        }
+
         ImagingOrderStatus? parsed = Enum.TryParse<ImagingOrderStatus>(status, true, out var value) ? value : null;
         var result = await imaging.QueryAsync(parsed, term, page, 20, cancellationToken);
 
@@ -47,6 +52,10 @@ public sealed class RadiologyController(
         }
 
         var order = result.Value!;
+        if (User.IsInRole(nameof(Role.Patient)) && order.PatientId != CurrentUserId())
+        {
+            return Forbid();
+        }
         await audit.RecordAsync("imaging.view", CurrentUserId(), order.PatientId, "ImagingOrder", id.ToString(), cancellationToken);
 
         ViewData["Title"] = $"Imaging {order.Number}";

@@ -2,58 +2,67 @@
 @model MainVm
 @{
     ViewData["Title"] = "Our Specialist Physicians & Medical Faculty";
-    ViewData["Description"] = "Meet the consultant doctors and clinical specialists of MANARA Hospital.";
+    ViewData["Description"] = "Meet the consultant doctors and clinical specialists of MANARA Hospital across all departments.";
+
+    var doctors = new (string Name, string Credentials, string Dept, string Title, string Room, string Shift, int Fee, string Img)[]
+    {
+        // Cardiology
+        ("Dr. Salma El-Sayed", "MD, FESC", "Cardiology", "Senior Consultant Cardiologist", "Clinic 301", "Sun, Tue, Thu 09:00–14:00", 450, "doc-salma.jpg"),
+        ("Dr. Marcus Vance", "MD, FACC", "Cardiology", "Consultant Interventional Cardiologist", "Clinic 302", "Mon, Wed 09:00–14:00", 500, "doc-marcus.jpg"),
+
+        // Internal Medicine
+        ("Dr. Karim Mansour", "MD, MRCP", "Internal Medicine", "Head of Internal Medicine", "Clinic 204", "Sun, Mon, Wed 09:00–14:00", 350, "doc-karim.jpg"),
+        ("Dr. Elena Rostova", "MD, PhD", "Internal Medicine", "Consultant Endocrinologist", "Clinic 205", "Tue, Thu 09:00–14:00", 400, "doc-elena.jpg"),
+
+        // Orthopedics
+        ("Dr. Tarek Nabil", "MD, FRCS", "Orthopedics", "Consultant Orthopedic Surgeon", "Clinic 112", "Sun, Tue 09:00–14:00", 400, "doc-tarek.jpg"),
+        ("Dr. Arthur Chen", "MD, FAAOS", "Orthopedics", "Consultant Joint Replacement Specialist", "Clinic 114", "Mon, Wed, Thu 09:00–14:00", 450, "doc-chen.jpg"),
+
+        // Pediatrics
+        ("Dr. Nadia Farouk", "MD, MRCPCH", "Pediatrics", "Senior Specialist Pediatrician", "Clinic 105", "Sun, Wed 09:00–14:00", 350, "doc-nadia.jpg"),
+        ("Dr. Amara Okafor", "MD, DCH", "Pediatrics", "Consultant Pediatric Critical Care", "Clinic 107", "Mon, Tue, Thu 09:00–14:00", 380, "doc-amara.jpg"),
+
+        // Radiology & Imaging
+        ("Dr. Hisham Fouad", "MD, FRCR", "Radiology & Imaging", "Consultant Diagnostic Radiologist", "Imaging Suite 1", "Sun–Wed 09:00–14:00", 300, "doc-hisham.jpg"),
+        ("Dr. Sofia Al-Khatib", "MD, EDiR", "Radiology & Imaging", "Consultant Musculoskeletal Radiologist", "Imaging Suite 2", "Sun, Wed, Thu 09:00–14:00", 320, "doc-sofia.jpg"),
+
+        // Clinical Laboratory
+        ("Dr. Nadia Kamel", "MD, FRCPath", "Clinical Laboratory", "Chief Clinical Pathologist", "Lab Central", "Sun–Thu 09:00–14:00", 250, "doc-nadia-kamel.jpg"),
+        ("Dr. Julian Beck", "MD, PhD", "Clinical Laboratory", "Consultant Clinical Biochemist", "Lab Diagnostic 2", "Mon, Tue, Thu 09:00–14:00", 280, "doc-julian.jpg"),
+
+        // Neurology
+        ("Dr. Layla Mahmoud", "MD, FEBN", "Neurology", "Consultant Neurologist", "Clinic 401", "Sun, Tue 09:00–14:00", 480, "doc-layla.jpg"),
+        ("Dr. Mateo Rossi", "MD, PhD", "Neurology", "Consultant Neurophysiologist", "Clinic 403", "Mon, Wed, Thu 09:00–14:00", 520, "doc-mateo.jpg"),
+
+        // Dermatology
+        ("Dr. Yasmine Zaki", "MD, FAAD", "Dermatology", "Consultant Dermatologist", "Clinic 208", "Sun, Wed 09:00–14:00", 380, "doc-yasmine.jpg"),
+        ("Dr. Hiroshi Tanaka", "MD, PhD", "Dermatology", "Specialist Dermatologic Surgeon", "Clinic 210", "Mon, Tue, Thu 09:00–14:00", 420, "doc-tanaka.jpg")
+    };
 }
 
-<section class="doctors-band" style="padding-top:48px;">
+<section class="doctors-band" style="padding-top:48px;padding-bottom:64px;">
     <div class="container">
         <span class="pill-tag">Medical Faculty</span>
-        <h1 class="serif-display" style="font-size:38px;margin-top:12px;">Our Specialist Physicians</h1>
+        <h1 class="serif-display" style="font-size:38px;margin-top:12px;margin-bottom:8px;">Specialist Physicians &amp; Consultants</h1>
+        <p class="section-lead" style="margin-bottom:36px;max-width:680px;">
+            Our board-certified consultants and clinical directors across all 8 specialized departments. Every physician maintains active clinic hours and direct patient consultations.
+        </p>
         <div class="doc-grid">
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-salma.jpg")" alt="Dr. Salma El-Sayed" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Cardiology</div>
-                    <div class="doc-name">Dr. Salma El-Sayed</div>
-                    <div class="doc-meta">Senior Consultant Cardiologist</div>
-                    <div class="doc-meta">Clinic 301 &bull; Sun–Wed 09:00–16:00</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;font-weight:600;color:var(--navy);">450 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Cardiology" data-book-doc="Dr. Salma El-Sayed">Book Consultation</button>
+            @foreach (var doc in doctors)
+            {
+                <div class="doc-card">
+                    <img src="@Url.Content("~/assets/manara/doctors/" + doc.Img)" alt="@doc.Name" class="doc-img" />
+                    <div class="doc-info">
+                        <div class="doc-spec">@doc.Dept</div>
+                        <div class="doc-name">@doc.Name</div>
+                        <div class="doc-meta" style="font-weight:600;color:var(--ink-700);">@doc.Title</div>
+                        <div class="doc-meta" style="font-size:11px;color:var(--slate);">@doc.Credentials &bull; @doc.Room</div>
+                        <div class="doc-meta" style="font-size:11px;color:var(--slate-light);">@doc.Shift</div>
+                        <div class="doc-meta tabular" style="margin-top:6px;margin-bottom:12px;font-weight:700;color:var(--navy);font-size:13.5px;">@doc.Fee EGP</div>
+                        <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="@doc.Dept" data-book-doc="@doc.Name">Book Consultation</button>
+                    </div>
                 </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-karim.jpg")" alt="Dr. Karim Mansour" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Internal Medicine</div>
-                    <div class="doc-name">Dr. Karim Mansour</div>
-                    <div class="doc-meta">Head of Internal Medicine</div>
-                    <div class="doc-meta">Clinic 204 &bull; Sun–Thu 10:00–17:00</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;font-weight:600;color:var(--navy);">350 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Internal Medicine" data-book-doc="Dr. Karim Mansour">Book Consultation</button>
-                </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-tarek.jpg")" alt="Dr. Tarek Nabil" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Orthopedics</div>
-                    <div class="doc-name">Dr. Tarek Nabil</div>
-                    <div class="doc-meta">Consultant Orthopedic Surgeon</div>
-                    <div class="doc-meta">Clinic 112 &bull; Mon–Thu 09:30–15:30</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;font-weight:600;color:var(--navy);">400 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Orthopedics" data-book-doc="Dr. Tarek Nabil">Book Consultation</button>
-                </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-nadia.jpg")" alt="Dr. Nadia Farouk" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Pediatrics</div>
-                    <div class="doc-name">Dr. Nadia Farouk</div>
-                    <div class="doc-meta">Specialist Pediatrician</div>
-                    <div class="doc-meta">Clinic 105 &bull; Sat–Wed 08:30–14:30</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;font-weight:600;color:var(--navy);">350 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Pediatrics" data-book-doc="Dr. Nadia Farouk">Book Consultation</button>
-                </div>
-            </div>
+            }
         </div>
     </div>
 </section>

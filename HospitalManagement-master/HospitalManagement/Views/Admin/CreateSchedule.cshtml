@@ -2,9 +2,7 @@
 @model CreateScheduleVM
 @{
     ViewData["Title"] = "CreateSchedule";
-    Layout = "_MainLayout";
     SelectList DoctorselectListItems = new SelectList(Model.Doctors, "Id", "Name");
-    
 }
 
 

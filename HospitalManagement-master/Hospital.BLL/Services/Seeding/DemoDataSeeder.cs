@@ -501,46 +501,131 @@ public sealed class DemoDataSeeder(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        var cardioDept = await dbContext.Departments.FirstOrDefaultAsync(d => d.Name == "Cardiology", cancellationToken);
-        if (cardioDept == null)
+        // 1. Ensure all 8 Departments
+        var deptDefs = new (string Name, string Code)[]
         {
-            cardioDept = new Department { Name = "Cardiology", Code = "CARD", Branch = branch };
-            dbContext.Departments.Add(cardioDept);
+            ("Cardiology", "CARD"),
+            ("Internal Medicine", "IM"),
+            ("Orthopedics", "ORTH"),
+            ("Pediatrics", "PED"),
+            ("Radiology & Imaging", "RAD"),
+            ("Clinical Laboratory", "LAB"),
+            ("Neurology", "NEUR"),
+            ("Dermatology", "DERM")
+        };
+
+        var depts = new Dictionary<string, Department>(StringComparer.OrdinalIgnoreCase);
+        foreach (var def in deptDefs)
+        {
+            var dept = await dbContext.Departments.FirstOrDefaultAsync(d => d.Code == def.Code || d.Name == def.Name, cancellationToken);
+            if (dept == null)
+            {
+                dept = new Department { Name = def.Name, Code = def.Code, Branch = branch };
+                dbContext.Departments.Add(dept);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            else if (dept.Name != def.Name)
+            {
+                dept.Name = def.Name;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            depts[def.Name] = dept;
+        }
+
+        // 2. Ensure all 8 Specializations
+        var specs = new Dictionary<string, Specialization>(StringComparer.OrdinalIgnoreCase);
+        foreach (var def in deptDefs)
+        {
+            var spec = await dbContext.Specializations.FirstOrDefaultAsync(s => s.Name == def.Name, cancellationToken);
+            if (spec == null)
+            {
+                spec = await dbContext.Specializations.FirstOrDefaultAsync(s => s.Name.StartsWith(def.Name.Substring(0, 4)), cancellationToken);
+                if (spec == null)
+                {
+                    spec = new Specialization { Name = def.Name };
+                    dbContext.Specializations.Add(spec);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+            specs[def.Name] = spec;
+        }
+
+        // 3. Ensure Shifts
+        var morningShift = await dbContext.Shifts.FirstOrDefaultAsync(s => s.ShiftType == ShiftType.Morning, cancellationToken);
+        if (morningShift == null)
+        {
+            morningShift = new Shift { ShiftType = ShiftType.Morning, StartTIme = new TimeSpan(9, 0, 0), EndTIme = new TimeSpan(14, 0, 0) };
+            dbContext.Shifts.Add(morningShift);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        var cardioSpec = await dbContext.Specializations.FirstOrDefaultAsync(s => s.Name == "Cardiology", cancellationToken);
-        if (cardioSpec == null)
+        var afternoonShift = await dbContext.Shifts.FirstOrDefaultAsync(s => s.ShiftType == ShiftType.Afternoon, cancellationToken);
+        if (afternoonShift == null)
         {
-            cardioSpec = new Specialization { Name = "Cardiology" };
-            dbContext.Specializations.Add(cardioSpec);
+            afternoonShift = new Shift { ShiftType = ShiftType.Afternoon, StartTIme = new TimeSpan(14, 0, 0), EndTIme = new TimeSpan(18, 0, 0) };
+            dbContext.Shifts.Add(afternoonShift);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 1. Admin (Youssef Ahmedy)
-        if (await userManager.FindByEmailAsync("admin@manara.hospital") == null)
+        // 4. Ensure Core 8 Role Demo Accounts (both .internal and .hospital for compatibility)
+        async Task EnsureUserAsync(string email, string password, string first, string last, string gender, string[] roles)
         {
-            var admin = new ApplicationUser
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
             {
-                UserName = "admin@manara.hospital",
-                Email = "admin@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Youssef",
-                LastName = "Ahmedy",
-                Gender = "Male",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(admin, "Admin@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(admin, Role.Admin.ToString());
-                await userManager.AddToRoleAsync(admin, Role.HospitalAdmin.ToString());
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    EmailConfirmed = true,
+                    FirstName = first,
+                    LastName = last,
+                    Gender = gender,
+                    CreatedAt = DateTime.UtcNow
+                };
+                var res = await userManager.CreateAsync(user, password);
+                if (res.Succeeded)
+                {
+                    foreach (var role in roles)
+                    {
+                        await userManager.AddToRoleAsync(user, role);
+                    }
+                }
             }
         }
 
-        // 2. Patient (Ahmed Hassan Ibrahim)
-        if (await userManager.FindByEmailAsync("ahmed.hassan@patient.manara") == null)
+        // Admin
+        await EnsureUserAsync("admin@manara.internal", "Admin@2026", "Youssef", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
+        await EnsureUserAsync("admin@manara.hospital", "Admin@2026", "Youssef", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
+
+        // Patient
+        var pat1 = await userManager.FindByEmailAsync("patient@manara.internal");
+        if (pat1 == null)
         {
-            var pat = new Patient
+            var p = new Patient
+            {
+                UserName = "patient@manara.internal",
+                Email = "patient@manara.internal",
+                EmailConfirmed = true,
+                FirstName = "Ahmed",
+                LastName = "Hassan Ibrahim",
+                Gender = "Male",
+                DateOfBirth = new DateTime(1982, 5, 14, 0, 0, 0, DateTimeKind.Utc),
+                PhoneNumber = "+20 100 555 0142",
+                BloodGroup = "O+",
+                Mrn = "MRN-10042",
+                IsSynthetic = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            if ((await userManager.CreateAsync(p, "Patient@2026")).Succeeded)
+            {
+                await userManager.AddToRoleAsync(p, Role.Patient.ToString());
+            }
+        }
+        var pat2 = await userManager.FindByEmailAsync("ahmed.hassan@patient.manara");
+        if (pat2 == null)
+        {
+            var p = new Patient
             {
                 UserName = "ahmed.hassan@patient.manara",
                 Email = "ahmed.hassan@patient.manara",
@@ -548,138 +633,141 @@ public sealed class DemoDataSeeder(
                 FirstName = "Ahmed",
                 LastName = "Hassan Ibrahim",
                 Gender = "Male",
-                DateOfBirth = new DateTime(1978, 4, 12, 0, 0, 0, DateTimeKind.Utc),
+                DateOfBirth = new DateTime(1982, 5, 14, 0, 0, 0, DateTimeKind.Utc),
                 PhoneNumber = "+20 100 555 0142",
                 BloodGroup = "O+",
                 Mrn = "MRN-10042",
                 IsSynthetic = true,
                 CreatedAt = DateTime.UtcNow
             };
-            if ((await userManager.CreateAsync(pat, "Patient@2026")).Succeeded)
+            if ((await userManager.CreateAsync(p, "Patient@2026")).Succeeded)
             {
-                await userManager.AddToRoleAsync(pat, Role.Patient.ToString());
+                await userManager.AddToRoleAsync(p, Role.Patient.ToString());
             }
         }
 
-        // 3. Doctor (Dr. Salma El-Sayed)
-        if (await userManager.FindByEmailAsync("dr.salma@manara.hospital") == null)
+        // Receptionist
+        await EnsureUserAsync("reception@manara.internal", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
+        await EnsureUserAsync("reception@manara.hospital", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
+
+        // Pharmacist
+        await EnsureUserAsync("pharmacy@manara.internal", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
+        await EnsureUserAsync("pharmacy@manara.hospital", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
+
+        // Billing
+        await EnsureUserAsync("billing@manara.internal", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
+        await EnsureUserAsync("billing@manara.hospital", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
+
+        // 5. Seed the 16 Specialist Doctors across all 8 Departments (2 Doctors each)
+        var doctorCatalog = new (string Email, string First, string Last, string Gender, string DeptName, string Room, decimal Fee, decimal Salary, string Img, DayOfWeek[] Days)[]
         {
-            var doc = new Doctor
+            // Cardiology
+            ("dr.salma@manara.hospital", "Salma", "El-Sayed", "Female", "Cardiology", "Clinic 301", 450, 28000, "doc-salma.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("dr.vance@manara.internal", "Marcus", "Vance", "Male", "Cardiology", "Clinic 302", 500, 32000, "doc-marcus.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+
+            // Internal Medicine
+            ("doctor.karim@manara.internal", "Karim", "Mansour", "Male", "Internal Medicine", "Clinic 204", 350, 24000, "doc-karim.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("dr.rostova@manara.internal", "Elena", "Rostova", "Female", "Internal Medicine", "Clinic 205", 400, 26000, "doc-elena.jpg", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+
+            // Orthopedics
+            ("dr.tarek@manara.internal", "Tarek", "Nabil", "Male", "Orthopedics", "Clinic 112", 400, 27000, "doc-tarek.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("dr.chen@manara.internal", "Arthur", "Chen", "Male", "Orthopedics", "Clinic 114", 450, 29000, "doc-chen.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+
+            // Pediatrics
+            ("dr.nadia@manara.internal", "Nadia", "Farouk", "Female", "Pediatrics", "Clinic 105", 350, 23000, "doc-nadia.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("dr.amara@manara.internal", "Amara", "Okafor", "Female", "Pediatrics", "Clinic 107", 380, 25000, "doc-amara.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+
+            // Radiology & Imaging
+            ("radiology@manara.internal", "Hisham", "Fouad", "Male", "Radiology & Imaging", "Imaging Suite 1", 300, 24000, "doc-hisham.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday]),
+            ("dr.khatib@manara.internal", "Sofia", "Al-Khatib", "Female", "Radiology & Imaging", "Imaging Suite 2", 320, 25000, "doc-sofia.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+
+            // Clinical Laboratory
+            ("lab.nadia@manara.internal", "Nadia", "Kamel", "Female", "Clinical Laboratory", "Lab Central", 250, 23000, "doc-nadia-kamel.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("dr.beck@manara.internal", "Julian", "Beck", "Male", "Clinical Laboratory", "Lab Diagnostic 2", 280, 25000, "doc-julian.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+
+            // Neurology
+            ("dr.layla@manara.internal", "Layla", "Mahmoud", "Female", "Neurology", "Clinic 401", 480, 30000, "doc-layla.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("dr.rossi@manara.internal", "Mateo", "Rossi", "Male", "Neurology", "Clinic 403", 520, 33000, "doc-mateo.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+
+            // Dermatology
+            ("dr.yasmine@manara.internal", "Yasmine", "Zaki", "Female", "Dermatology", "Clinic 208", 380, 25000, "doc-yasmine.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("dr.tanaka@manara.internal", "Hiroshi", "Tanaka", "Male", "Dermatology", "Clinic 210", 420, 28000, "doc-tanaka.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday])
+        };
+
+        var docIndex = 1;
+        foreach (var docDef in doctorCatalog)
+        {
+            var existingUser = await userManager.FindByEmailAsync(docDef.Email);
+            Doctor? doc = existingUser as Doctor;
+            if (doc == null && existingUser == null)
             {
-                UserName = "dr.salma@manara.hospital",
-                Email = "dr.salma@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Salma",
-                LastName = "El-Sayed",
-                Gender = "Female",
-                EmployeeNumber = "DOC-02",
-                Salary = 25000,
-                SessionPrice = 450,
-                SlotMinutes = 30,
-                Specialization = cardioSpec,
-                Department = cardioDept,
-                ClinicRoom = "Clinic 301",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(doc, "Doctor@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(doc, Role.Doctor.ToString());
+                var dept = depts[docDef.DeptName];
+                var spec = specs[docDef.DeptName];
+
+                doc = new Doctor
+                {
+                    UserName = docDef.Email,
+                    Email = docDef.Email,
+                    EmailConfirmed = true,
+                    FirstName = docDef.First,
+                    LastName = docDef.Last,
+                    Gender = docDef.Gender,
+                    EmployeeNumber = $"DOC-{docIndex:00}",
+                    Salary = docDef.Salary,
+                    SessionPrice = docDef.Fee,
+                    SlotMinutes = 30,
+                    Specialization = spec,
+                    Department = dept,
+                    ClinicRoom = docDef.Room,
+                    Image = docDef.Img,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var created = await userManager.CreateAsync(doc, "Doctor@2026");
+                if (created.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(doc, Role.Doctor.ToString());
+                    if (docDef.DeptName == "Clinical Laboratory")
+                    {
+                        await userManager.AddToRoleAsync(doc, Role.LabTechnician.ToString());
+                    }
+                    if (docDef.DeptName == "Radiology & Imaging")
+                    {
+                        await userManager.AddToRoleAsync(doc, Role.Radiologist.ToString());
+                    }
+                }
             }
+            else if (doc != null)
+            {
+                doc.Image = docDef.Img;
+                doc.ClinicRoom = docDef.Room;
+                doc.SessionPrice = docDef.Fee;
+                if (doc.DepartmentId == null) doc.Department = depts[docDef.DeptName];
+                if (doc.SpecializationId == null) doc.Specialization = specs[docDef.DeptName];
+                await userManager.UpdateAsync(doc);
+            }
+
+            if (doc != null)
+            {
+                foreach (var day in docDef.Days)
+                {
+                    var hasSched = await dbContext.Schedules.AnyAsync(s => s.DoctorId == doc.Id && s.Day == day, cancellationToken);
+                    if (!hasSched)
+                    {
+                        dbContext.Schedules.Add(new Schedule
+                        {
+                            DoctorId = doc.Id,
+                            ShiftId = morningShift.ShiftId,
+                            Day = day,
+                            Status = Status.Assigned
+                        });
+                    }
+                }
+            }
+
+            docIndex++;
         }
 
-        // 4. Receptionist (Nourhan Adel)
-        if (await userManager.FindByEmailAsync("reception@manara.hospital") == null)
-        {
-            var rec = new ApplicationUser
-            {
-                UserName = "reception@manara.hospital",
-                Email = "reception@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Nourhan",
-                LastName = "Adel",
-                Gender = "Female",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(rec, "Front@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(rec, Role.Receptionist.ToString());
-            }
-        }
-
-        // 5. LabTech (Hossam Gamal)
-        if (await userManager.FindByEmailAsync("lab@manara.hospital") == null)
-        {
-            var lab = new ApplicationUser
-            {
-                UserName = "lab@manara.hospital",
-                Email = "lab@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Hossam",
-                LastName = "Gamal",
-                Gender = "Male",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(lab, "Lab@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(lab, Role.LabTechnician.ToString());
-            }
-        }
-
-        // 6. Radiologist (Dr. Hisham Fouad)
-        if (await userManager.FindByEmailAsync("radiology@manara.hospital") == null)
-        {
-            var rad = new ApplicationUser
-            {
-                UserName = "radiology@manara.hospital",
-                Email = "radiology@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Hisham",
-                LastName = "Fouad",
-                Gender = "Male",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(rad, "Rad@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(rad, Role.Radiologist.ToString());
-            }
-        }
-
-        // 7. Pharmacist (Mona El-Gamal)
-        if (await userManager.FindByEmailAsync("pharmacy@manara.hospital") == null)
-        {
-            var pharm = new ApplicationUser
-            {
-                UserName = "pharmacy@manara.hospital",
-                Email = "pharmacy@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Mona",
-                LastName = "El-Gamal",
-                Gender = "Female",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(pharm, "Pharm@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(pharm, Role.Pharmacist.ToString());
-            }
-        }
-
-        // 8. BillingOfficer (Sherif Kamel)
-        if (await userManager.FindByEmailAsync("billing@manara.hospital") == null)
-        {
-            var bill = new ApplicationUser
-            {
-                UserName = "billing@manara.hospital",
-                Email = "billing@manara.hospital",
-                EmailConfirmed = true,
-                FirstName = "Sherif",
-                LastName = "Kamel",
-                Gender = "Male",
-                CreatedAt = DateTime.UtcNow
-            };
-            if ((await userManager.CreateAsync(bill, "Bill@2026")).Succeeded)
-            {
-                await userManager.AddToRoleAsync(bill, Role.BillingOfficer.ToString());
-            }
-        }
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

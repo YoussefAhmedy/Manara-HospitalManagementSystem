@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Hospital.BLL.Common;
+using Hospital.BLL.Helpers;
 using Hospital.BLL.Permissions;
 using Hospital.BLL.Services.Abstraction;
 using Hospital.DAL.DataBase;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HospitalManagement.Controllers;
 
 /// <summary>Scheduling workspace: availability, booking, check-in and queue management.</summary>
-[Authorize(Policy = "perm:" + Permission.AppointmentView)]
+[Authorize]
 public sealed class AppointmentsController(
     IAppointmentSchedulingService scheduling,
     IPatientLookupService patients,
@@ -23,6 +24,16 @@ public sealed class AppointmentsController(
 
     public async Task<IActionResult> Index(DateTime? date, string? status, string? doctorId, string? term, int page = 1, CancellationToken cancellationToken = default)
     {
+        if (User.IsInRole(nameof(Role.Patient)))
+        {
+            return RedirectToAction("ListAppointments", "Patient");
+        }
+
+        if (!User.HasClaim(Hospital.BLL.Helpers.AppClaimTypes.Permission, Permission.AppointmentView))
+        {
+            return Forbid();
+        }
+
         AppointStatus? parsed = Enum.TryParse<AppointStatus>(status, true, out var value) ? value : null;
         var result = await scheduling.QueryAsync(date, parsed, doctorId, null, term, page, 20, cancellationToken);
 
@@ -39,6 +50,7 @@ public sealed class AppointmentsController(
         return View(result);
     }
 
+    [Authorize(Policy = "perm:" + Permission.AppointmentView)]
     public async Task<IActionResult> Book(DateTime? date, string? doctorId, string? patientId, CancellationToken cancellationToken)
     {
         var target = (date ?? DateTime.UtcNow.Date.AddDays(1)).Date;

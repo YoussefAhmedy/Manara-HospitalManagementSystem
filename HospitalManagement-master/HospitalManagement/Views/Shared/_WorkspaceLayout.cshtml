@@ -56,6 +56,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/design-system.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
+    <script src="~/js/manara-sidebar.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -92,10 +93,16 @@
                     </a>
                 }
 
-                @if (IsAdmin || IsDoctor || IsRecep || IsPatient)
+                @if (IsPatient)
+                {
+                    <a class="ws-nav-btn @(string.Equals(currentController, "Patient", StringComparison.OrdinalIgnoreCase) && string.Equals(currentAction, "ListAppointments", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="Patient" asp-action="ListAppointments" style="text-decoration:none;">
+                        <span>My Appointments</span>
+                    </a>
+                }
+                else if (IsAdmin || IsDoctor || IsRecep)
                 {
                     <a class="ws-nav-btn @(Is("Appointments") ? "active" : "")" asp-controller="Appointments" asp-action="Index" style="text-decoration:none;">
-                        <span>@(IsPatient ? "My Appointments" : "Appointments")</span>
+                        <span>Appointments</span>
                     </a>
                 }
 
@@ -150,7 +157,14 @@
                 }
 
                 <!-- Group: Governance -->
-                @if (IsAdmin || IsDoctor || IsLab || IsRad || IsPharm || IsBill || IsPatient)
+                @if (IsPatient)
+                {
+                    <div class="ws-nav-group">Governance</div>
+                    <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="ExaminationReport" style="text-decoration:none;">
+                        <span>My Examination Sheet</span>
+                    </a>
+                }
+                else if (IsAdmin || IsDoctor || IsLab || IsRad || IsPharm || IsBill)
                 {
                     <div class="ws-nav-group">Governance</div>
                     <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="Index" style="text-decoration:none;">
@@ -185,7 +199,7 @@
         <div class="ws-right">
             <header class="ws-topbar no-print">
                 <div class="ws-topbar-left">
-                    <a class="btn btn-outline btn-xs" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                    <a class="btn btn-outline btn-xs" id="backToWebsiteLink" href="/" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
                         &larr; Back to Manara Website
                     </a>
                     <span class="badge badge-navy">@roleKicker</span>
