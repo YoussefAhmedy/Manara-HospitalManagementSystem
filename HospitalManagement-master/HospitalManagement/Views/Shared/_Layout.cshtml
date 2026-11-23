@@ -1,0 +1,136 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@using System.Security.Claims
+@using Hospital.BLL.Helpers
+@{
+    var title = ViewData["Title"] as string ?? "MANARA";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var userName = User.FindFirst(ClaimTypes.GivenName)?.Value ?? User.Identity?.Name?.Split('@')[0] ?? "Account";
+    var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList();
+    var primaryRole = roles.FirstOrDefault() ?? "Guest";
+    var initials = string.Concat(userName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+    if (string.IsNullOrEmpty(initials)) initials = "MN";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <title>@title — MANARA Hospital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Public Minimal Navbar -->
+    <header class="navbar" id="publicNavbar">
+        <div class="container-wide navbar-inner">
+            <a class="brand" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                <partial name="_ManaraLogo" model="28" />
+                <span>MANARA</span>
+            </a>
+
+            <nav class="nav-center" id="navCenter" aria-label="Primary Navigation">
+                <a class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")" asp-controller="Home" asp-action="Index" style="text-decoration:none;">Home</a>
+                <a class="nav-link @(currentController == "Home" && (currentAction == "Departments" || currentAction == "Services") ? "active" : "")" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Departments</a>
+                <a class="nav-link @(currentController == "Home" && currentAction == "Doctors" ? "active" : "")" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">Doctors</a>
+                <a class="nav-link @(currentController == "Account" ? "active" : "")" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In &amp; Portals</a>
+            </nav>
+
+            <div class="nav-right" id="navRight">
+                @if (isAuthenticated)
+                {
+                    <a class="user-chip" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;" title="Open Workspace">
+                        <span class="user-dot">@initials</span>
+                        <span>Open @primaryRole App</span>
+                    </a>
+                    <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
+                    <form asp-controller="Account" asp-action="LogOff" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-outline btn-xs">Sign Out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="nav-link" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In</a>
+                    <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
+                }
+                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">&#9776;</button>
+            </div>
+        </div>
+    </header>
+
+    <main id="appRoot">
+        @RenderBody()
+    </main>
+
+    <!-- Modal Overlay -->
+    <div class="overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal" id="modalBox">
+            <div class="modal-head">
+                <h3 class="modal-title" id="modalTitle">Dialog</h3>
+                <button type="button" class="btn btn-outline btn-xs" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-foot" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Stack -->
+    <div class="toast-stack" id="toastStack" aria-live="polite">
+        @if (TempData["StatusMessage"] is string statusMessage)
+        {
+            <div class="toast">@statusMessage</div>
+        }
+        @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+            <div class="toast error">@errorMessage</div>
+        }
+    </div>
+
+    <!-- Monumental Dark Navy Footer -->
+    <footer class="manara-footer">
+        <div class="container">
+            <div class="footer-top">
+                <div>
+                    <h4>Your Wellness Begins With Us</h4>
+                    <p style="font-size:12.5px;color:var(--slate-light);max-width:300px;margin-bottom:14px;">
+                        Multi-specialty hospital &amp; enterprise clinical platform. Serene, human-centered care powered by verified clinical records.
+                    </p>
+                    <p class="tabular" style="font-size:12px;color:var(--porcelain);">24/7 Emergency: 19400 &bull; +20 2 2555 0190</p>
+                </div>
+                <div>
+                    <div class="footer-col-title">Navigation</div>
+                    <a class="footer-link" asp-controller="Home" asp-action="Index">Home</a>
+                    <a class="footer-link" asp-controller="Home" asp-action="Departments">Departments</a>
+                    <a class="footer-link" asp-controller="Home" asp-action="Doctors">Specialists</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn">Sign In (Blank Form)</a>
+                </div>
+                <div>
+                    <div class="footer-col-title">Role Sign-In (Prefills Form)</div>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-ADMIN">Hospital Manager Account</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-PATIENT">Patient Portal Account</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-DOCTOR">Attending Doctor Account</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-LAB">Laboratory Account</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-RAD">Radiology Specialist Account</a>
+                </div>
+                <div>
+                    <div class="footer-col-title">Hospital Branches</div>
+                    <p style="font-size:12.5px;color:var(--slate-light);margin-bottom:10px;">Main Medical Center<br />Central District &bull; Outpatient &amp; ICU</p>
+                    <p style="font-size:12.5px;color:var(--slate-light);">Al-Sharqia Outpatient Clinic<br />Diagnostic Lab &amp; Clinics</p>
+                </div>
+            </div>
+            <div class="footer-emblem-center">
+                <partial name="_ManaraLogo" model="46" />
+            </div>
+        </div>
+        <div class="footer-wordmark">MANARA</div>
+    </footer>
+
+    <script src="~/js/manara-ui.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

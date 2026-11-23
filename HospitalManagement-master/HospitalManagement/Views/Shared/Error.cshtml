@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Something went wrong";
+}
+<section class="container section">
+    <div class="form-panel text-center">
+        <span class="eyebrow">Unexpected error</span>
+        <h1>We couldn’t complete that request.</h1>
+        <p class="auth-card__lead">Please try again. No clinical or account details are displayed on this page.</p>
+        @if (ViewData["RequestId"] is string requestId)
+        {
+            <p class="form-hint">Reference: <code>@requestId</code></p>
+        }
+        <a class="button button--primary" asp-controller="Home" asp-action="Index">Return home</a>
+    </div>
+</section>

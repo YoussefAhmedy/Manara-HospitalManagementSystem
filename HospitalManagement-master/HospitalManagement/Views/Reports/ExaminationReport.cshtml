@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Individual Patient Examination Report";
+}
+
+<div class="ws-header no-print">
+    <div>
+        <span class="pill-tag">ReportsController &bull; Clinical Governance</span>
+        <h1 class="serif-display ws-title">Individual Patient Examination Report</h1>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a class="btn btn-outline btn-sm" asp-action="Export" asp-route-key="revenue">Export CSV</a>
+        <button type="button" class="btn btn-navy btn-sm" data-action="print">Print / Save PDF</button>
+    </div>
+</div>
+
+<div class="panel" style="padding:28px;background:var(--white);border:1px solid var(--line);">
+    <!-- Hospital Report Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--navy);padding-bottom:14px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <partial name="_ManaraLogo" model="36" />
+            <div>
+                <div class="serif-display" style="font-size:24px;font-weight:700;letter-spacing:0.06em;">MANARA HOSPITAL</div>
+                <div style="font-size:11.5px;color:var(--slate);">Signed Individual Patient Examination Report &bull; Clinical Record</div>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <span class="badge badge-success">Finalized &amp; Signed</span>
+            <div class="tabular" style="font-size:11px;color:var(--slate-light);margin-top:4px;">ENC-2026-041 &bull; 2026-11-18</div>
+        </div>
+    </div>
+
+    <!-- Patient Demographics & Doctor Info -->
+    <div class="form-grid" style="margin-bottom:16px;">
+        <div><strong>Patient:</strong> Ahmed Hassan Ibrahim (<span class="tabular">MRN-10042</span>)</div>
+        <div><strong>Attending Physician:</strong> Dr. Salma El-Sayed (Cardiology)</div>
+        <div><strong>Known Allergies:</strong> <span class="badge badge-danger">Penicillin (Severe Urticaria)</span></div>
+        <div class="tabular"><strong>Electronically Signed:</strong> 2026-11-18 11:45 UTC</div>
+    </div>
+
+    <!-- Structured Vitals Strip -->
+    <div class="tabular" style="padding:10px 14px;background:var(--porcelain);border:1px solid var(--line);margin-bottom:16px;font-size:12.5px;">
+        <strong>Vitals:</strong> BP 136/84 mmHg &bull; HR 76 bpm &bull; Temp 36.7 &deg;C &bull; SpO2 98% &bull; BMI 24.2
+    </div>
+
+    <!-- Clinical Details -->
+    <div style="margin-bottom:16px;line-height:1.6;">
+        <p style="margin-bottom:8px;"><strong>Primary Diagnosis:</strong> I10 &mdash; Essential (primary) hypertension, well controlled under current regimen.</p>
+        <p style="margin-bottom:8px;"><strong>Clinical Findings:</strong> Patient reports good adherence to morning monotherapy. No chest discomfort, orthopnea, or lower extremity edema observed. Digital Chest X-Ray (RAD-401) shows normal cardiothoracic ratio and clear lung fields.</p>
+        <p style="margin-bottom:8px;"><strong>Follow-Up Plan:</strong> Return to clinic on Nov 26 with fasting lipid profile and 7-day home blood pressure log.</p>
+    </div>
+
+    <!-- Safety Gated Lab Results Table (Authorized only) -->
+    <div style="margin-top:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--slate);font-weight:700;">Authorized Laboratory Results Only</h4>
+            <span class="badge badge-teal">Lab Safety Gate Active</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Measured Result</th>
+                        <th>Reference Interval</th>
+                        <th>Authorizing Specialist</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fasting Lipid Panel</strong></td>
+                        <td class="tabular">LDL 112 mg/dL &bull; HDL 48 mg/dL &bull; Trig 140 mg/dL</td>
+                        <td class="tabular">LDL &lt; 130 mg/dL</td>
+                        <td>Hossam Gamal (LabTech)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Complete Blood Count (CBC)</strong></td>
+                        <td class="tabular">WBC 6.8 &times; 10^9/L &bull; Hgb 14.2 g/dL &bull; Plt 240 &times; 10^9/L</td>
+                        <td class="tabular">WBC 4.0–11.0 &times; 10^9/L</td>
+                        <td>Hossam Gamal (LabTech)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Attestation Signature Block -->
+    <div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+            <div style="font-size:10.5px;color:var(--slate);text-transform:uppercase;letter-spacing:0.08em;">Attending Physician Attestation</div>
+            <div class="serif-display" style="font-size:18px;font-weight:700;color:var(--navy);margin-top:4px;">Dr. Salma El-Sayed, MD, FESC</div>
+            <div style="font-size:11px;color:var(--slate-light);">Senior Consultant Cardiologist &bull; License #EGY-MED-44910</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="tabular" style="font-size:11px;color:var(--slate-light);">Cryptographic Signature Hash</div>
+            <div class="tabular" style="font-size:11px;font-family:monospace;color:var(--teal);">SHA256: 7f8a9d12...c44b9101</div>
+        </div>
+    </div>
+</div>

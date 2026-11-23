@@ -1,0 +1,33 @@
+@model AdminIndexVm
+@{
+    ViewData["Title"] = "Operations overview";
+}
+
+<div class="container">
+<section class="page-header">
+    <div class="page-header__eyebrow">Administration</div>
+    <h1>Operations overview</h1>
+    <p>Manage clinician access, schedules, and operational records.</p>
+</section>
+
+<section class="dashboard-grid" aria-label="Operations summary">
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Clinicians</div><div class="stat-card__value">@Model.NoOfDoctors</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Patient accounts</div><div class="stat-card__value">@Model.NoOfPatients</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Appointment requests</div><div class="stat-card__value">@Model.NoOfAppoint</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Upcoming requests</div><div class="stat-card__value">@Model.NoOfNewAppoint</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Approved today</div><div class="stat-card__value">@Model.NoOfTodayPatient</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Medical records</div><div class="stat-card__value">@Model.NoOfMedical</div></article>
+
+    <section class="panel-card dashboard-span-12" aria-labelledby="admin-actions-heading">
+        <div class="panel-card__heading"><div><h2 id="admin-actions-heading">Administration tasks</h2><p>Access is restricted to administrator accounts.</p></div></div>
+        <div class="dashboard-actions">
+            <a class="button button--primary" asp-controller="Admin" asp-action="CreateDoctor">Create clinician account</a>
+            <a class="button" asp-controller="Admin" asp-action="ListDoctors">Manage clinicians</a>
+            <a class="button" asp-controller="Admin" asp-action="GetPatients">Patient accounts</a>
+            <a class="button" asp-controller="Admin" asp-action="CreateSchedule">Configure schedules</a>
+            <a class="button" asp-controller="Admin" asp-action="GetMedicalRecords">Records inventory</a>
+        </div>
+        <p class="form-hint mb-0">Record counts are provided for operations and do not expose clinical content.</p>
+    </section>
+</section>
+</div>

@@ -1,0 +1,75 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Create a patient account";
+    ViewData["BodyClass"] = "auth-page";
+    ViewData["MainClass"] = "auth-main";
+}
+
+<section class="auth-card auth-card--wide" aria-labelledby="register-heading">
+    <span class="eyebrow">Patient access</span>
+    <h1 id="register-heading">Create your account</h1>
+    <p class="auth-card__lead">Registration creates a patient account. Email verification is required before sign-in.</p>
+
+    <form asp-action="Register" asp-controller="Account" method="post">
+        <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
+        <div class="form-grid">
+            <div>
+                <label class="form-label" asp-for="FirstName"></label>
+                <input class="form-control" asp-for="FirstName" autocomplete="given-name" />
+                <span asp-validation-for="FirstName" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="LastName"></label>
+                <input class="form-control" asp-for="LastName" autocomplete="family-name" />
+                <span asp-validation-for="LastName" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="Email"></label>
+                <input class="form-control" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
+                <span asp-validation-for="Email" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="PhoneNumber"></label>
+                <input class="form-control" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
+                <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="DateOfBirth"></label>
+                <input class="form-control" asp-for="DateOfBirth" type="date" autocomplete="bday" />
+                <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="Gender"></label>
+                <select class="form-select" asp-for="Gender">
+                    <option value="">Select an option</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+                <span asp-validation-for="Gender" class="field-validation-error"></span>
+            </div>
+            <div>
+                <label class="form-label" asp-for="Password"></label>
+                <input class="form-control" asp-for="Password" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="field-validation-error"></span>
+                <p class="form-hint">Use a unique password. The deployment enforces the configured password policy.</p>
+            </div>
+            <div>
+                <label class="form-label" asp-for="ConfirmedPassword"></label>
+                <input class="form-control" asp-for="ConfirmedPassword" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmedPassword" class="field-validation-error"></span>
+            </div>
+        </div>
+        <p class="form-hint mt-3">Only enter information requested for this demonstration. Do not submit real patient records or sensitive health information.</p>
+        <div class="form-actions">
+            <button class="button button--primary" type="submit">Create patient account</button>
+            <a class="button" asp-controller="Home" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+
+    <div class="auth-card__footer"><span>Already have an account? <a asp-controller="Account" asp-action="LogIn">Sign in</a></span></div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

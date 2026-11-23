@@ -1,0 +1,39 @@
+@using Hospital.DAL.Entities
+@model IEnumerable<MedicalRecord>
+
+@{
+    ViewData["Title"] = "Medical Records List";
+    
+}
+<div class="container mt-4">
+<div class="text-center">
+    <h2 class="mb-4">List of Medical Records</h2>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover text-center">
+        <thead>
+            <tr>
+                <th>Diagnosis</th>
+                <th>Treatment</th>
+                <th>Record Date</th>
+                <th>Doctor Name</th>
+                <th>Doctor Specialization</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Diagnosis</td>
+                    <td>@item.Treatment</td>
+                    <td>@item.RecordDate.ToShortDateString()</td>
+                    <td>Dr. @item.Doctor?.FirstName @item.Doctor?.LastName</td>
+                    <td>@item.Doctor?.Specialization?.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>
+</div>

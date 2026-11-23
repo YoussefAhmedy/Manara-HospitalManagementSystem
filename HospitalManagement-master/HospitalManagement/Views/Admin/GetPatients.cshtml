@@ -1,0 +1,38 @@
+@model List<PatientVm>
+@{
+    ViewData["Title"] = "Patient accounts";
+}
+
+<section class="container page-header">
+    <div class="page-header__eyebrow">Administration</div>
+    <h1>Patient accounts</h1>
+    <p>Account details are visible only to authorized administrators.</p>
+</section>
+
+<section class="container section pt-0" aria-label="Patient account directory">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">No patient accounts are available.</div>
+    }
+    else
+    {
+        <div class="data-table-wrap">
+            <table class="table table-hover">
+                <thead><tr><th scope="col">Patient</th><th scope="col">Email</th><th scope="col">Phone</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                    @foreach (var patient in Model)
+                    {
+                        var initials = string.Concat(patient.FirstName?.FirstOrDefault(), patient.LastName?.FirstOrDefault()).ToUpperInvariant();
+                        <tr>
+                            <td><div class="table-person"><span class="table-person__avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(initials) ? "PA" : initials)</span><span>@patient.FirstName @patient.LastName</span></div></td>
+                            <td>@patient.Email</td>
+                            <td>@patient.Phone</td>
+                            <td class="text-end"><a class="button button--small" asp-action="GetPatientDetails" asp-controller="Admin" asp-route-id="@patient.Id">Review account</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <p class="form-hint mt-3">Handle personal information according to the deployment’s approved access, retention, and privacy procedures.</p>
+</section>

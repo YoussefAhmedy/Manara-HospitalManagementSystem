@@ -1,0 +1,52 @@
+@using Hospital.BLL.Helpers
+@using Hospital.DAL.Entities.OwnedTypes
+@model DoctorAppointmentApprovalVm
+@{
+    ViewData["Title"] = "EditAppointment";
+    
+}
+@section Style {
+    @*    *@
+    }}
+
+
+<div class="container mt-4">
+
+<div class="container">
+    <div class="form-section">
+        <h2>Appointment</h2>
+
+        <form asp-action="EditAppointment" asp-controller="Doctor"  method="post">
+            
+            <div asp-validation-summary="All" class="text-danger"></div>
+            
+            @* <input type="hidden" asp-for ="Id" /> *@
+            @* <input type="hidden" name="Id" value="Id" /> *@
+
+            <input type="hidden" asp-for ="Id" required />
+            
+            <div class="form-group">
+                <label asp-for="Status"></label>
+                <select asp-for="Status" class="form-control" required>
+                    <option value="">Select Status</option>
+                    <option value="1">@AppointStatus.Approved.ToString()</option>
+                    <option value="2">@AppointStatus.NotApproved.ToString()</option>
+                    <option value="3">@AppointStatus.Pending.ToString()</option>
+
+                </select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+
+            <br />
+            <input class="sub" type="submit" value="Submit">
+
+        </form>
+    </div>
+</div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

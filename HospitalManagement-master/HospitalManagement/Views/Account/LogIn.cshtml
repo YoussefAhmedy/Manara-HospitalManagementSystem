@@ -1,0 +1,219 @@
+@model Hospital.BLL.ModelVM.LogInViewModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@{
+    ViewData["Title"] = "Sign In & Portals";
+    ViewData["Description"] = "Sign in to MANARA Hospital multi-role clinical and management workspaces.";
+    var isDevOrDemo = Environment.EnvironmentName == "Development" || Environment.EnvironmentName == "Demo";
+}
+
+<section class="auth-shell">
+    <div class="container">
+        <div style="margin-bottom:24px;">
+            <span class="pill-tag">AccountController &bull; Manara Identity</span>
+            <h1 class="serif-display" style="font-size:36px;margin-top:10px;">Sign In To Manara Hospital Portals</h1>
+            <p style="color:var(--slate);max-width:680px;margin-top:5px;">
+                Enter your credentials below to open your role-specific clinical workspace, or @(isDevOrDemo ? "click any demo role card on the right to populate its credentials before clicking Sign In." : "sign in with your authorized hospital account.")
+            </p>
+        </div>
+
+        <div class="auth-grid">
+            <div class="auth-panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:12px;">
+                    <div style="display:flex;gap:8px;">
+                        <button type="button" class="btn btn-navy btn-sm" id="tabLoginBtn">Sign In</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="tabRegBtn">Create Patient Account</button>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-xs" id="clearLoginBtn" style="display:none;">Clear Fields</button>
+                </div>
+
+                <div id="prefillBanner" class="prefill-banner" style="display:none;">
+                    <span id="prefillBannerText">Loaded role credentials — review or click Sign In.</span>
+                </div>
+
+                @if (TempData["StatusMessage"] is string statusMsg)
+                {
+                    <div class="prefill-banner" style="background:var(--success-bg);color:var(--success);">
+                        <span>@statusMsg</span>
+                    </div>
+                }
+
+                <!-- Sign In Form (Blank by default) -->
+                <div id="loginFormPane">
+                    <form asp-action="LogIn" asp-controller="Account" method="post" id="loginForm" class="form-grid">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <div asp-validation-summary="All" class="validation-summary-errors form-field full" role="alert" style="color:var(--danger);font-size:12px;"></div>
+
+                        <div class="form-field full">
+                            <label class="form-label" asp-for="Email">Email Address</label>
+                            <input class="input" asp-for="Email" id="loginEmailInput" type="email" placeholder="Enter your email address..." autocomplete="username" inputmode="email" required value="" />
+                            <span asp-validation-for="Email" class="field-validation-error" style="color:var(--danger);font-size:11.5px;"></span>
+                        </div>
+
+                        <div class="form-field full">
+                            <label class="form-label" asp-for="Password">Password</label>
+                            <div class="pw-wrap">
+                                <input class="input" asp-for="Password" id="loginPassInput" type="password" placeholder="Enter your password..." autocomplete="current-password" required value="" style="padding-right:54px;" />
+                                <button type="button" class="pw-toggle" id="togglePwBtn">Show</button>
+                            </div>
+                            <span asp-validation-for="Password" class="field-validation-error" style="color:var(--danger);font-size:11.5px;"></span>
+                        </div>
+
+                        <div class="form-field full" style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" asp-for="RememberMe" id="rememberMeInput" />
+                            <label for="rememberMeInput" style="font-size:12px;color:var(--slate);cursor:pointer;">Remember this browser session</label>
+                        </div>
+
+                        <div class="form-field full" style="margin-top:6px;">
+                            <button type="submit" class="btn btn-navy" id="submitLoginBtn" style="width:100%;">Sign In To Detached Workspace</button>
+                        </div>
+
+                        @if (Model?.ExternalLogins?.Any(scheme => scheme.Name == "Google") == true)
+                        {
+                            <div class="form-field full">
+                                <a class="btn btn-outline" asp-controller="Account" asp-action="GoogleAuth" asp-route-returnUrl="@Model.ReturnUrl" style="width:100%;text-decoration:none;">
+                                    Continue With Google (OAuth 2.0)
+                                </a>
+                            </div>
+                        }
+
+                        <div class="form-field full" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                            <a asp-controller="Account" asp-action="ForgetPassword" style="font-size:12px;color:var(--teal);text-decoration:none;">Forgot your password?</a>
+                            <a href="javascript:void(0)" id="switchToRegisterLink" style="font-size:12px;color:var(--navy);text-decoration:none;">New patient? Register here</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Registration Form Pane -->
+                <div id="registerFormPane" style="display:none;">
+                    <form asp-action="Register" asp-controller="Account" method="post" id="registerForm" class="form-grid">
+                        <div class="form-field full">
+                            <label class="form-label">Full Name *</label>
+                            <input class="input" name="FirstName" placeholder="e.g. Karim" required />
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label">Family / Last Name *</label>
+                            <input class="input" name="LastName" placeholder="e.g. Tarek" required />
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label">Email Address *</label>
+                            <input class="input" type="email" name="Email" placeholder="name@example.com" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Password *</label>
+                            <input class="input" type="password" name="Password" placeholder="Minimum 6 characters" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Confirm Password *</label>
+                            <input class="input" type="password" name="ConfirmPassword" placeholder="Repeat password" required />
+                        </div>
+                        <div class="form-field full" style="margin-top:6px;">
+                            <button type="submit" class="btn btn-navy" style="width:100%;">Register &amp; Create Patient Account</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 8 Demo Role Cards Pane (Development / Demo Mode) -->
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span class="pill-tag">8 Demo Role Accounts &bull; Click To Fill Form</span>
+                    <span class="badge badge-teal">RBAC Enforced</span>
+                </div>
+
+                <div class="role-account-grid">
+                    <!-- 1. Hospital Manager -->
+                    <button type="button" class="role-account-card" data-acc="ACC-ADMIN" data-email="admin@manara.hospital" data-pass="Admin@2026" data-title="Hospital Manager / Admin">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-navy">Manager</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Hospital Manager / Admin</div>
+                        <div class="role-account-email">admin@manara.hospital</div>
+                        <div class="role-account-desc">Full hospital command: KPIs, staff &amp; doctors, branches, schedules, RBAC &amp; audit logs.</div>
+                    </button>
+
+                    <!-- 2. Patient -->
+                    <button type="button" class="role-account-card" data-acc="ACC-PATIENT" data-email="ahmed.hassan@patient.manara" data-pass="Patient@2026" data-title="Patient Self-Service Portal">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-teal">Patient</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Patient Self-Service Portal</div>
+                        <div class="role-account-email">ahmed.hassan@patient.manara</div>
+                        <div class="role-account-desc">Book, reschedule or cancel visits, view PACS X-Rays, signed doctor reports, Rx &amp; bills.</div>
+                    </button>
+
+                    <!-- 3. Attending Physician -->
+                    <button type="button" class="role-account-card" data-acc="ACC-DOCTOR" data-email="dr.salma@manara.hospital" data-pass="Doctor@2026" data-title="Attending Physician">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-navy">Doctor</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Attending Physician</div>
+                        <div class="role-account-email">dr.salma@manara.hospital</div>
+                        <div class="role-account-desc">Patient queue, clinical encounters (vitals, notes, sign &amp; amend), order labs/scans &amp; issue Rx.</div>
+                    </button>
+
+                    <!-- 4. Receptionist -->
+                    <button type="button" class="role-account-card" data-acc="ACC-RECEP" data-email="reception@manara.hospital" data-pass="Front@2026" data-title="Front Desk & Reception">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-teal">Reception</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Front Desk &amp; Reception</div>
+                        <div class="role-account-email">reception@manara.hospital</div>
+                        <div class="role-account-desc">Patient registration with duplicate MRN check, conflict-checked scheduling &amp; check-in.</div>
+                    </button>
+
+                    <!-- 5. LabTech -->
+                    <button type="button" class="role-account-card" data-acc="ACC-LAB" data-email="lab@manara.hospital" data-pass="Lab@2026" data-title="Laboratory Specialist">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-warning">LabTech</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Laboratory Specialist</div>
+                        <div class="role-account-email">lab@manara.hospital</div>
+                        <div class="role-account-desc">7-stage specimen workflow (Requested to Released) &amp; clinical verification safety gate.</div>
+                    </button>
+
+                    <!-- 6. Radiologist -->
+                    <button type="button" class="role-account-card" data-acc="ACC-RAD" data-email="radiology@manara.hospital" data-pass="Rad@2026" data-title="Radiology Specialist">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-navy">Radiologist</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Radiology Specialist</div>
+                        <div class="role-account-email">radiology@manara.hospital</div>
+                        <div class="role-account-desc">Imaging orders queue, full-screen PACS viewer with contrast controls &amp; report sign-off.</div>
+                    </button>
+
+                    <!-- 7. Pharmacist -->
+                    <button type="button" class="role-account-card" data-acc="ACC-PHARM" data-email="pharmacy@manara.hospital" data-pass="Pharm@2026" data-title="Clinical Pharmacist">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-success">Pharmacist</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Clinical Pharmacist</div>
+                        <div class="role-account-email">pharmacy@manara.hospital</div>
+                        <div class="role-account-desc">Prescription queue verification, dispensing with live StockBatch deduction &amp; expiry alerts.</div>
+                    </button>
+
+                    <!-- 8. Billing Officer -->
+                    <button type="button" class="role-account-card" data-acc="ACC-BILL" data-email="billing@manara.hospital" data-pass="Bill@2026" data-title="Billing & Insurance Officer">
+                        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                            <span class="badge badge-navy">Billing</span>
+                            <span class="card-status" style="font-size:10.5px;color:var(--slate-light);">Fill Login &rarr;</span>
+                        </div>
+                        <div class="role-account-title">Billing &amp; Insurance Officer</div>
+                        <div class="role-account-email">billing@manara.hospital</div>
+                        <div class="role-account-desc">Service invoicing, insurance policy coverage, payment posting &amp; CSV financial exports.</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

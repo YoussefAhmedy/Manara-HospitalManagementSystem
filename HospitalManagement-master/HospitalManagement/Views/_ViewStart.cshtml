@@ -1,0 +1,17 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+
+    // Public website pages and authentication flows use the MANARA public layout.
+    // All operational role dashboards and clinical modules use the detached workspace layout.
+    if (string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) ||
+        (string.Equals(controller, "Account", StringComparison.OrdinalIgnoreCase) &&
+         !string.Equals(action, "Profile", StringComparison.OrdinalIgnoreCase)))
+    {
+        Layout = "_Layout";
+    }
+    else
+    {
+        Layout = "_WorkspaceLayout";
+    }
+}

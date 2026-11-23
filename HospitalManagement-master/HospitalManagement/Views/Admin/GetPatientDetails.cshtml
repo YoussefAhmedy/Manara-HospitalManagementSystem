@@ -1,0 +1,99 @@
+@model EditPatientVm
+@{
+    ViewData["Title"] = "GetPatientDetails";
+    Layout = "_MainLayout";
+    
+}
+
+
+
+
+<div class="container">
+    <div class="form-section">
+        <h2>Patient details</h2>
+        <input type="hidden" id="IdValue" value="@Model.Email" />
+        <form asp-action="EditPatient" asp-controller="Admin"  method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="input-group">
+                <label asp-for="FirstName"></label>
+                <input class="text" asp-for="FirstName" placeholder="First Name" required />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+
+            <div class="input-group">
+                <label asp-for="LastName"></label>
+                <input class="text" asp-for="LastName" placeholder="Last Name" required />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+
+            <div class="input-group">
+                <label asp-for="PhoneNumber"></label>
+                <input class="text" asp-for="PhoneNumber" placeholder="Phone Number" required />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <div class="input-group">
+                <label asp-for="Email">Email Address</label>
+                <input class="em" type="email" asp-for="Email" placeholder="Email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+
+            <div class="input-group">
+                <label asp-for="DateOfBirth"></label>
+                <input class="pass" asp-for="DateOfBirth" type="date" required />
+                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Gender"></label>
+                <select asp-for="Gender" class="form-control">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+                <span asp-validation-for="Gender" class="text-danger"></span>
+            </div>
+
+
+
+
+
+            <input class="btn btn-success" type="submit" value="submit edit">
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                Delete
+            </button>
+
+            <!-- Modal -->
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Delete Patient</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure ?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" id="delete" class="btn btn-primary">submit</button>
+                        </div>
+                    </div>
+                </div>
+            </div><br />
+            <p><a asp-action="GetPatients" asp-controller="Admin">Go back</a></p>
+
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
+
