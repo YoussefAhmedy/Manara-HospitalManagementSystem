@@ -2,47 +2,44 @@
     ViewData["Title"] = "Demonstration access";
     ViewData["BodyClass"] = "auth-page";
     ViewData["MainClass"] = "auth-main";
-    ViewData["Description"] = "Synthetic demonstration accounts for evaluating the CareAxis hospital platform.";
-    var accounts = new (string Handle, string Role, string Workspace)[]
+    ViewData["Description"] = "Synthetic demonstration accounts for evaluating the MANARA Hospital platform.";
+    var accounts = new (string Handle, string Role, string Workspace, string Password)[]
     {
-        ("admin", "Hospital administrator", "Operations dashboard, reports, audit"),
-        ("reception", "Receptionist", "Booking, check-in, registration"),
-        ("nurse", "Nurse", "Triage queue, vitals, specimen collection"),
-        ("sara.hassan", "Doctor", "Clinical dashboard, encounters"),
-        ("lab", "Laboratory technician", "Specimen-to-release worklist"),
-        ("pharmacy", "Pharmacist", "Prescription review and dispensing"),
-        ("billing", "Billing officer", "Invoices, payments, refunds"),
-        ("records", "Medical records officer", "Patient directory"),
-        ("management", "Management", "Reporting only"),
-        ("auditor", "Auditor", "Append-only audit trail")
+        ("admin@manara.internal", "Hospital Administrator", "Executive Operations, Bed & Ward Capacity, Live Audit", "Admin@2026"),
+        ("patient@manara.internal", "Registered Patient", "Patient Health Portal, Vitals, Upcoming Bookings", "Patient@2026"),
+        ("doctor.karim@manara.internal", "Attending Physician / Cardiologist", "Clinical Encounters, Diagnostic Requests, PACs Reviews", "Doctor@2026"),
+        ("reception@manara.internal", "Front Desk Receptionist", "Patient Intake, Check-in, Scheduling & Queues", "Recep@2026"),
+        ("lab.nadia@manara.internal", "Chief Pathologist / Lab Tech", "Specimen Intake, 7-Stage Stepper, Result Verification", "Lab@2026"),
+        ("radiology@manara.internal", "Senior Radiologist", "Radiology Queue, DICOM/PACS Radiographs, Imaging Release", "Rad@2026"),
+        ("pharmacy@manara.internal", "Head Clinical Pharmacist", "Prescription Dispensing, Stock Batch Management", "Pharm@2026"),
+        ("billing@manara.internal", "Billing & Revenue Officer", "Invoicing, Insurance Claims, Payments & Dual Approvals", "Bill@2026")
     };
 }
 
 <section class="auth-card auth-card--wide" aria-labelledby="demo-heading">
     <span class="eyebrow">Synthetic environment</span>
-    <h1 id="demo-heading">Demonstration access</h1>
+    <h1 id="demo-heading">MANARA Demonstration Access</h1>
     <p class="auth-card__lead">
-        This deployment contains <strong>synthetic demonstration data only</strong>. There are no real
-        patients, no real clinicians and no real financial transactions. Every seeded account uses an
-        <code>@@example.invalid</code> address.
+        This deployment is preloaded with <strong>synthetic demonstration data</strong> for all hospital departments.
+        You can sign in with any of the 8 pre-configured staff or patient accounts below.
     </p>
 
     <div class="notice notice--warning" style="margin-bottom:var(--space-5)">
         <partial name="_Icon" model="@("alert")" />
         <div>
-            <div class="notice__title">Do not enter real patient information</div>
-            These credentials are published and shared. Any data entered here is not protected and must be
-            treated as public.
+            <div class="notice__title">Demonstration Environment Notice</div>
+            These credentials are published and shared. Any data entered here is synthetic and non-confidential.
         </div>
     </div>
 
     <table class="table table--compact">
-        <caption class="visually-hidden">Demonstration accounts by role</caption>
+        <caption class="visually-hidden">MANARA demonstration accounts by role</caption>
         <thead>
             <tr>
-                <th scope="col">Sign in as</th>
+                <th scope="col">Role</th>
                 <th scope="col">Email</th>
-                <th scope="col">What you will see</th>
+                <th scope="col">Password</th>
+                <th scope="col">Workspace Scope</th>
             </tr>
         </thead>
         <tbody>
@@ -50,7 +47,8 @@
             {
                 <tr>
                     <td class="strong">@account.Role</td>
-                    <td class="mono">@account.Handle@@example.invalid</td>
+                    <td class="mono">@account.Handle</td>
+                    <td class="mono">@account.Password</td>
                     <td class="muted">@account.Workspace</td>
                 </tr>
             }
@@ -58,13 +56,11 @@
     </table>
 
     <p class="field__hint" style="margin-top:var(--space-4)">
-        The demonstration password is published in the deployment notes for this environment. It is set
-        only by the demo seeder and is never used for a real account. Accounts are created only when
-        demo seeding is enabled by the operator.
+        Tip: On the Sign-In page, you can click on any role card to automatically populate the email and password fields.
     </p>
 
     <div class="auth-card__footer" style="display:flex;gap:var(--space-3);justify-content:space-between;align-items:center">
-        <span>Sign in with any account above.</span>
-        <a class="btn btn--primary" asp-controller="Account" asp-action="LogIn">Go to sign in</a>
+        <span>Ready to test the system?</span>
+        <a class="btn btn--primary" asp-controller="Account" asp-action="LogIn">Go to Sign In</a>
     </div>
 </section>
