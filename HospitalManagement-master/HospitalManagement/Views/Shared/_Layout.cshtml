@@ -44,9 +44,12 @@
             <div class="nav-right" id="navRight">
                 @if (isAuthenticated)
                 {
+                    <a class="btn btn-teal btn-sm" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;">
+                        Open Workspace / Dashboard
+                    </a>
                     <a class="user-chip" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;" title="Open Workspace">
                         <span class="user-dot">@initials</span>
-                        <span>Open @primaryRole App</span>
+                        <span>@primaryRole</span>
                     </a>
                     <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
                     <form asp-controller="Account" asp-action="LogOff" method="post" style="display:inline;">
