@@ -30,6 +30,11 @@ public class Prescription
     [MaxLength(500)]
     public string? PharmacistNote { get; set; }
 
+    [MaxLength(1000)]
+    public string? DoctorInstructions { get; set; }
+
+    public DateTime? NextFollowUpDate { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public List<PrescriptionItem> Items { get; set; } = [];

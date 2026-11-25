@@ -4,6 +4,7 @@ using Hospital.BLL.Helpers;
 using Hospital.BLL.ModelVM;
 using Hospital.BLL.Notifications;
 using Hospital.BLL.Services.Abstraction;
+using Hospital.DAL.DataBase;
 using Hospital.DAL.Entities;
 using Hospital.DAL.Entities.OwnedTypes;
 using Microsoft.AspNetCore.Authorization;
@@ -25,6 +26,7 @@ public sealed class PatientController : Controller
     private readonly IEmailQueue _emailQueue;
     private readonly IAuditLogger _auditLogger;
     private readonly ILogger<PatientController> _logger;
+    private readonly HospitalDbContext _dbContext;
 
     public PatientController(
         IDoctorService doctorService,
@@ -35,7 +37,8 @@ public sealed class PatientController : Controller
         IScheduleService scheduleService,
         IEmailQueue emailQueue,
         IAuditLogger auditLogger,
-        ILogger<PatientController> logger)
+        ILogger<PatientController> logger,
+        HospitalDbContext dbContext)
     {
         _doctorService = doctorService;
         _patientService = patientService;
@@ -46,6 +49,7 @@ public sealed class PatientController : Controller
         _emailQueue = emailQueue;
         _auditLogger = auditLogger;
         _logger = logger;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -82,10 +86,129 @@ public sealed class PatientController : Controller
     }
 
     [HttpGet]
-    public IActionResult AddAppointment() => View(new AppointmentVm
+    public async Task<IActionResult> MyCare()
     {
-        Doctors = _doctorService.GetAllDoctors()
-    });
+        var patientId = CurrentUserId();
+        if (patientId is null) return Challenge();
+
+        var patient = await _dbContext.Patients.AsNoTracking()
+            .Include(p => p.Allergies)
+            .FirstOrDefaultAsync(p => p.Id == patientId);
+        if (patient is null) return NotFound();
+
+        var prescriptions = await _dbContext.Prescriptions.AsNoTracking()
+            .Include(p => p.Encounter).ThenInclude(e => e!.Doctor).ThenInclude(d => d!.Specialization)
+            .Include(p => p.Items).ThenInclude(i => i.Medication)
+            .Where(p => p.PatientId == patientId)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .ToListAsync();
+
+        var completedVisits = await _dbContext.Appointments.AsNoTracking()
+            .Include(a => a.Doctor).ThenInclude(d => d!.Specialization)
+            .Where(a => a.PatientID == patientId && a.Status == AppointStatus.Completed)
+            .OrderByDescending(a => a.AppointmentDate)
+            .ToListAsync();
+
+        var upcomingVisits = await _dbContext.Appointments.AsNoTracking()
+            .Include(a => a.Doctor).ThenInclude(d => d!.Specialization)
+            .Where(a => a.PatientID == patientId && a.AppointmentDate >= DateTime.Today && a.Status != AppointStatus.Cancelled)
+            .OrderBy(a => a.AppointmentDate)
+            .ToListAsync();
+
+        var invoices = await _dbContext.Invoices.AsNoTracking()
+            .Include(i => i.Lines)
+            .Include(i => i.Payments)
+            .Where(i => i.PatientId == patientId)
+            .OrderByDescending(i => i.IssuedAtUtc)
+            .Take(10)
+            .ToListAsync();
+
+        var doctorsById = await _dbContext.Doctors.AsNoTracking()
+            .Include(d => d.Specialization)
+            .Where(d => d.IsActive)
+            .ToDictionaryAsync(d => d.Id);
+
+        await _auditLogger.RecordAsync("patient.mycare-viewed", patientId, patientId, "mycare", patientId);
+        return View(new PatientMyCareVm
+        {
+            Patient = patient,
+            Prescriptions = prescriptions,
+            CompletedVisits = completedVisits,
+            UpcomingVisits = upcomingVisits,
+            Invoices = invoices,
+            DoctorsById = doctorsById
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BookFollowUp(string doctorId, DateTime preferredDate, string? notes)
+    {
+        var patientId = CurrentUserId();
+        if (patientId is null) return Challenge();
+
+        var doctor = await _doctorService.DoctorByIdAsync(doctorId);
+        if (doctor is null)
+        {
+            TempData["ErrorMessage"] = "Doctor not found.";
+            return RedirectToAction(nameof(MyCare));
+        }
+
+        var date = preferredDate.Date < DateTime.Today.AddDays(1) ? DateTime.Today.AddDays(1) : preferredDate.Date;
+        var hasCompletedPrior = await _dbContext.Appointments.AnyAsync(
+            a => a.PatientID == patientId && a.DoctorID == doctor.Id && a.Status == AppointStatus.Completed);
+
+        var appliedFee = hasCompletedPrior ? doctor.FollowUpFee : doctor.SessionPrice;
+        var label = hasCompletedPrior ? $"Follow-Up Visit ({appliedFee:0} EGP returning rate)" : $"Consultation ({appliedFee:0} EGP)";
+
+        // Allocate non-conflicting slot between 09:30 and 13:30
+        var existingSlots = await _dbContext.Appointments
+            .Where(a => a.DoctorID == doctor.Id && a.AppointmentDate == date && a.Status != AppointStatus.Cancelled && a.Status != AppointStatus.NotApproved)
+            .Select(a => a.SlotMinutes)
+            .ToListAsync();
+        int chosenSlot = 570;
+        while (existingSlots.Contains(chosenSlot) && chosenSlot < 810) chosenSlot += 30;
+
+        var appointment = new Appointment
+        {
+            Number = $"FUP-{Random.Shared.Next(10000, 99999)}",
+            AppointmentDate = date,
+            SlotMinutes = chosenSlot,
+            DurationMinutes = doctor.SlotMinutes > 0 ? doctor.SlotMinutes : 30,
+            Status = AppointStatus.Approved,
+            Notes = string.IsNullOrWhiteSpace(notes) ? label : $"{label} — {notes.Trim()}",
+            PatientID = patientId,
+            DoctorID = doctor.Id,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        _dbContext.Appointments.Add(appointment);
+        await _dbContext.SaveChangesAsync();
+
+        await _auditLogger.RecordAsync("patient.followup-booked", patientId, patientId, "appointment", appointment.AppointmentID.ToString());
+        TempData["StatusMessage"] = $"Follow-up confirmed with Dr. {doctor.FirstName} {doctor.LastName} on {date:ddd, dd MMM yyyy} ({appliedFee:0} EGP).";
+        return RedirectToAction(nameof(MyCare));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AddAppointment(string? doctorId = null)
+    {
+        var patientId = CurrentUserId();
+        var followUpIds = string.IsNullOrWhiteSpace(patientId)
+            ? new List<string>()
+            : await _dbContext.Appointments.AsNoTracking()
+                .Where(a => a.PatientID == patientId && a.Status == AppointStatus.Completed && a.DoctorID != null)
+                .Select(a => a.DoctorID!)
+                .Distinct()
+                .ToListAsync();
+
+        ViewBag.FollowUpDoctorIds = followUpIds;
+        return View(new AppointmentVm
+        {
+            Doctors = _doctorService.GetAllDoctors().Where(d => d.IsActive).ToList(),
+            DoctorId = doctorId ?? string.Empty
+        });
+    }
 
     [HttpPost]
     public async Task<IActionResult> AddAppointment(AppointmentVm model)

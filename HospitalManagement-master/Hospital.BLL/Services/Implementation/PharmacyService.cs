@@ -13,6 +13,7 @@ public sealed class PharmacyService(
     public async Task<Result<Prescription>> CreateAsync(
         int encounterId, IReadOnlyCollection<int> medicationIds, string actorUserId,
         string dose, string frequency, string duration, string? route,
+        string? instructions = null, string? intakeSchedule = null, DateTime? nextFollowUpDate = null,
         CancellationToken cancellationToken = default)
     {
         if (medicationIds.Count == 0)
@@ -46,6 +47,10 @@ public sealed class PharmacyService(
             return Result<Prescription>.Fail("One or more medications are unavailable.", "invalid_medication");
         }
 
+        var defaultSchedule = string.IsNullOrWhiteSpace(intakeSchedule)
+            ? BuildIntakeSchedule(frequency)
+            : intakeSchedule.Trim();
+
         var prescription = new Prescription
         {
             Number = await numbers.NextFormattedAsync(ClinicalNumber.Prescription, "prescription", cancellationToken),
@@ -53,6 +58,8 @@ public sealed class PharmacyService(
             PatientId = encounter.PatientId,
             PrescribedByUserId = actorUserId,
             Status = PrescriptionStatus.Pending,
+            DoctorInstructions = string.IsNullOrWhiteSpace(instructions) ? null : instructions.Trim(),
+            NextFollowUpDate = nextFollowUpDate,
             CreatedAtUtc = DateTime.UtcNow,
             Items = medications.Select(medication => new PrescriptionItem
             {
@@ -61,13 +68,37 @@ public sealed class PharmacyService(
                 Frequency = frequency,
                 Duration = duration,
                 Route = route,
+                Instructions = string.IsNullOrWhiteSpace(instructions) ? null : instructions.Trim(),
+                IntakeSchedule = defaultSchedule,
                 Quantity = Math.Max(1, ParseQuantity(dose) * ParseFrequencyPerDay(frequency) * ParseDurationDays(duration))
             }).ToList()
         };
 
+        if (nextFollowUpDate.HasValue || !string.IsNullOrWhiteSpace(instructions))
+        {
+            var patient = await dbContext.Patients.FirstOrDefaultAsync(p => p.Id == encounter.PatientId, cancellationToken);
+            if (patient is not null)
+            {
+                if (nextFollowUpDate.HasValue) patient.NextFollowUpDate = nextFollowUpDate;
+                if (!string.IsNullOrWhiteSpace(instructions)) patient.DoctorCareNotes = instructions.Trim();
+            }
+        }
+
         dbContext.Prescriptions.Add(prescription);
         await dbContext.SaveChangesAsync(cancellationToken);
         return Result<Prescription>.Ok(prescription);
+    }
+
+    private static string BuildIntakeSchedule(string frequency)
+    {
+        var f = ParseFrequencyPerDay(frequency);
+        return f switch
+        {
+            1 => "09:00 AM daily after breakfast",
+            2 => "08:00 AM after breakfast • 08:00 PM after dinner",
+            3 => "08:00 AM • 02:00 PM • 09:00 PM",
+            _ => "Every 6 hours (06:00 • 12:00 • 18:00 • 00:00)"
+        };
     }
 
     public async Task<Result> ReviewAsync(

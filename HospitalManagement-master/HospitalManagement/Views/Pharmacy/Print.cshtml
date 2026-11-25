@@ -1,0 +1,94 @@
+@model Hospital.DAL.Entities.Pharmacy.Prescription
+@{
+    ViewData["Title"] = $"MANARA Prescription {Model.Number}";
+    var doctor = Model.Encounter?.Doctor;
+}
+
+<div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;max-width:820px;margin-inline:auto;">
+    <a class="btn btn-sm" asp-controller="Pharmacy" asp-action="Details" asp-route-id="@Model.Id">&larr; Back to Details</a>
+    <button type="button" class="btn btn-primary btn-sm" data-action="print">Print / Save as PDF</button>
+</div>
+
+<article class="rx-print-sheet">
+    <header style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--navy, currentColor);padding-bottom:16px;margin-bottom:20px;">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:0.1em;">
+                <partial name="_ManaraLogo" model="28" />
+                <span>MANARA MEDICAL COMPLEX</span>
+            </div>
+            <div style="font-size:11.5px;margin-top:4px;opacity:0.75;">
+                Verified Electronic Prescription Sheet &bull; Alexandria &amp; Cairo Pavilions
+            </div>
+        </div>
+        <div style="text-align:right;font-size:12px;">
+            <div><strong>Rx Number:</strong> @Model.Number</div>
+            <div><strong>Date:</strong> @Model.CreatedAtUtc.ToString("dd MMM yyyy")</div>
+            <div><strong>Status:</strong> @Model.Status</div>
+        </div>
+    </header>
+
+    <section style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px;padding:14px;border:1px solid currentColor;border-radius:8px;">
+        <div style="font-size:12.5px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;font-weight:700;">Patient</div>
+            <div style="font-size:15px;font-weight:700;margin-top:2px;">@Model.Patient?.FirstName @Model.Patient?.LastName</div>
+            <div>MRN: @(Model.Patient?.Mrn ?? "—") &bull; Blood Group: @(Model.Patient?.BloodGroup ?? "—")</div>
+        </div>
+        <div style="font-size:12.5px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;font-weight:700;">Prescribing Physician</div>
+            <div style="font-size:15px;font-weight:700;margin-top:2px;">
+                @(doctor is null ? "Attending Physician" : $"Dr. {doctor.FirstName} {doctor.LastName}")
+            </div>
+            <div>@(doctor?.Credentials ?? "MD") &bull; @(doctor?.Specialization?.Name ?? "Clinical Specialist")</div>
+        </div>
+    </section>
+
+    <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Rx — Prescribed Medications &amp; Intake Schedule</h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:22px;font-size:12.5px;">
+        <thead>
+            <tr style="border-bottom:1.5px solid currentColor;text-align:left;">
+                <th style="padding:8px 6px;">Medication</th>
+                <th style="padding:8px 6px;">Dose &amp; Route</th>
+                <th style="padding:8px 6px;">Frequency</th>
+                <th style="padding:8px 6px;">Exact Times</th>
+                <th style="padding:8px 6px;">Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr style="border-bottom:1px solid rgba(0,0,0,0.12);">
+                    <td style="padding:10px 6px;">
+                        <strong>@item.Medication?.Name</strong><br />
+                        <span style="font-size:11px;opacity:0.75;">@item.Medication?.Strength @item.Medication?.Form</span>
+                    </td>
+                    <td style="padding:10px 6px;">@item.Dose (@(item.Route ?? "Oral"))</td>
+                    <td style="padding:10px 6px;">@item.Frequency</td>
+                    <td style="padding:10px 6px;font-weight:600;">@(item.IntakeSchedule ?? "As directed")</td>
+                    <td style="padding:10px 6px;">@item.Duration (Qty: @item.Quantity)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!string.IsNullOrWhiteSpace(Model.DoctorInstructions) || Model.NextFollowUpDate.HasValue)
+    {
+        <section style="padding:14px;border:1px dashed currentColor;border-radius:8px;margin-bottom:28px;font-size:12.5px;">
+            @if (!string.IsNullOrWhiteSpace(Model.DoctorInstructions))
+            {
+                <div><strong>Doctor Clinical Instructions:</strong> @Model.DoctorInstructions</div>
+            }
+            @if (Model.NextFollowUpDate.HasValue)
+            {
+                <div style="margin-top:6px;"><strong>Next Recommended Follow-Up Visit:</strong> @Model.NextFollowUpDate.Value.ToString("dddd, dd MMM yyyy")</div>
+            }
+        </section>
+    }
+
+    <footer style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:36px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.18);font-size:12px;">
+        <div>MANARA Medical Complex &bull; Verified Electronic Health Record</div>
+        <div style="text-align:right;">
+            <div style="font-weight:700;">@(doctor is null ? "Authorized Clinician" : $"Dr. {doctor.FirstName} {doctor.LastName}")</div>
+            <div style="font-size:11px;opacity:0.75;">Electronically Signed &amp; Audited</div>
+        </div>
+    </footer>
+</article>

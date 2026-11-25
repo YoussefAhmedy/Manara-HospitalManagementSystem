@@ -1,66 +1,8 @@
 @{
-    ViewData["Title"] = "Demonstration access";
-    ViewData["BodyClass"] = "auth-page";
-    ViewData["MainClass"] = "auth-main";
-    ViewData["Description"] = "Synthetic demonstration accounts for evaluating the MANARA Hospital platform.";
-    var accounts = new (string Handle, string Role, string Workspace, string Password)[]
-    {
-        ("admin@manara.internal", "Hospital Administrator", "Executive Operations, Bed & Ward Capacity, Live Audit", "Admin@2026"),
-        ("patient@manara.internal", "Registered Patient", "Patient Health Portal, Vitals, Upcoming Bookings", "Patient@2026"),
-        ("doctor.karim@manara.internal", "Attending Physician / Cardiologist", "Clinical Encounters, Diagnostic Requests, PACs Reviews", "Doctor@2026"),
-        ("reception@manara.internal", "Front Desk Receptionist", "Patient Intake, Check-in, Scheduling & Queues", "Recep@2026"),
-        ("lab.nadia@manara.internal", "Chief Pathologist / Lab Tech", "Specimen Intake, 7-Stage Stepper, Result Verification", "Lab@2026"),
-        ("radiology@manara.internal", "Senior Radiologist", "Radiology Queue, DICOM/PACS Radiographs, Imaging Release", "Rad@2026"),
-        ("pharmacy@manara.internal", "Head Clinical Pharmacist", "Prescription Dispensing, Stock Batch Management", "Pharm@2026"),
-        ("billing@manara.internal", "Billing & Revenue Officer", "Invoicing, Insurance Claims, Payments & Dual Approvals", "Bill@2026")
-    };
+    ViewData["Title"] = "MANARA Medical Complex";
 }
-
-<section class="auth-card auth-card--wide" aria-labelledby="demo-heading">
-    <span class="eyebrow">Synthetic environment</span>
-    <h1 id="demo-heading">MANARA Demonstration Access</h1>
-    <p class="auth-card__lead">
-        This deployment is preloaded with <strong>synthetic demonstration data</strong> for all hospital departments.
-        You can sign in with any of the 8 pre-configured staff or patient accounts below.
-    </p>
-
-    <div class="notice notice--warning" style="margin-bottom:var(--space-5)">
-        <partial name="_Icon" model="@("alert")" />
-        <div>
-            <div class="notice__title">Demonstration Environment Notice</div>
-            These credentials are published and shared. Any data entered here is synthetic and non-confidential.
-        </div>
-    </div>
-
-    <table class="table table--compact">
-        <caption class="visually-hidden">MANARA demonstration accounts by role</caption>
-        <thead>
-            <tr>
-                <th scope="col">Role</th>
-                <th scope="col">Email</th>
-                <th scope="col">Password</th>
-                <th scope="col">Workspace Scope</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var account in accounts)
-            {
-                <tr>
-                    <td class="strong">@account.Role</td>
-                    <td class="mono">@account.Handle</td>
-                    <td class="mono">@account.Password</td>
-                    <td class="muted">@account.Workspace</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <p class="field__hint" style="margin-top:var(--space-4)">
-        Tip: On the Sign-In page, you can click on any role card to automatically populate the email and password fields.
-    </p>
-
-    <div class="auth-card__footer" style="display:flex;gap:var(--space-3);justify-content:space-between;align-items:center">
-        <span>Ready to test the system?</span>
-        <a class="btn btn--primary" asp-controller="Account" asp-action="LogIn">Go to Sign In</a>
-    </div>
+<section class="container" style="padding:60px 24px;text-align:center;">
+    <h1 class="serif-display">MANARA Medical Complex</h1>
+    <p style="color:var(--slate);margin:14px 0 24px;">Please use your authorized email account to access MANARA portals.</p>
+    <a class="btn btn-navy" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In</a>
 </section>

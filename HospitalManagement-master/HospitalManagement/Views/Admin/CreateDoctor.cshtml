@@ -1,101 +1,191 @@
 @model CreateDoctorViewModel
+@using Hospital.DAL.Entities
 @{
-    ViewData["Title"] = "CreateDoctor";
+    ViewData["Title"] = "Create Doctor & Staff Access";
+    ViewData["Subtitle"] = "Provision a new clinician or promote an existing user account.";
     SelectList selectListItems = new SelectList(Model.Specializations, "Id", "Name");
+    var candidateUsers = ViewBag.CandidateUsers as List<ApplicationUser> ?? [];
 }
 
-
-    
-
-
-
-<div class="container">
-    <div class="form-section">
-        <h2>CreateDoctor</h2>
-        
-        <form asp-action="CreateDoctor" asp-controller="Admin" method="post" enctype="multipart/form-data">
-            <div class="text-success" id="Success" data-auto-dismiss="5000">@ViewBag.Success</div>
-            <div asp-validation-summary="All" class="text-danger"></div>
-
-            <div class="input-group">
-                <label asp-for="FirstName"></label>
-                <input class="text" asp-for="FirstName" placeholder="First Name" required />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="LastName"></label>
-                <input class="text" asp-for="LastName" placeholder="Last Name" required />
-                <span asp-validation-for="LastName" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="PhoneNumber"></label>
-                <input class="text" asp-for="PhoneNumber" placeholder="Phone Number" required />
-                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="Email">Email Address</label>
-                <input class="em" type="email" asp-for="Email" placeholder="Email" required />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            <div class="input-group">
-                <label asp-for="Salary"></label>
-                <input class="em"  asp-for="Salary" placeholder="Salary" required />
-                <span asp-validation-for="Salary" class="text-danger"></span>
-            </div>
-            <div class="input-group">
-                <label asp-for="SessionPrice"></label>
-                <input class="em" asp-for="SessionPrice" placeholder="price" required />
-                <span asp-validation-for="SessionPrice" class="text-danger"></span>
-            </div>
-            <div class="input-group">
-                <label asp-for="Password"></label>
-                <input class="pass" asp-for="Password" placeholder="Password" required />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="ConfirmedPassword"></label>
-                <input class="pass" asp-for="ConfirmedPassword" placeholder="Confirm Password" required />
-                <span asp-validation-for="ConfirmedPassword" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="DateOfBirth"></label>
-                <input class="pass" asp-for="DateOfBirth" type="date" required value="@DateTime.Now.ToString("MM/dd/yyyy")" />
-                <span asp-validation-for="DateOfBirth" class="text-danger" ></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Gender"></label>
-                <select asp-for="Gender" class="form-control">
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-                <span asp-validation-for="Gender" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SpecializationId"></label>
-                <select asp-for="SpecializationId" class="form-control" asp-items="selectListItems">
-                    <option value="">Select Sepicalization</option>
-                    
-                </select>
-                <span asp-validation-for= "SpecializationId" class="text-danger"></span>
-            </div>
-
-
-            <input class="sub" type="submit" value="Create">
-            
-        </form>
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Administration &bull; Medical Faculty</span>
+        <h1 class="ws-title">Create Doctor &amp; Provision Access</h1>
     </div>
+    <a class="btn btn-sm" asp-controller="Admin" asp-action="ListDoctors">Back to Clinicians Directory</a>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+    <!-- Card 1: Create New Doctor -->
+    <section class="panel" aria-labelledby="create-doc-heading">
+        <div class="panel-head">
+            <h2 class="panel-title" id="create-doc-heading">Create Doctor Account</h2>
+            <span class="badge badge-navy">Email: firstname.role@gmail.com</span>
+        </div>
+        <div class="panel-body">
+            <form asp-action="CreateDoctor" asp-controller="Admin" method="post" class="form-grid">
+                <div asp-validation-summary="All" class="text-danger form-field full" role="alert"></div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="FirstName">First Name</label>
+                    <input class="input" asp-for="FirstName" placeholder="e.g. Tariq" required />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="LastName">Last Name</label>
+                    <input class="input" asp-for="LastName" placeholder="e.g. Mansour" required />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Email">Email Address</label>
+                    <input class="input" type="email" asp-for="Email" placeholder="tariq.cardiologist@gmail.com" required />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="PhoneNumber">Phone Number</label>
+                    <input class="input" asp-for="PhoneNumber" placeholder="01012345678" required />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="SpecializationId">Specialization</label>
+                    <select asp-for="SpecializationId" class="select" asp-items="selectListItems" required>
+                        <option value="">Select Specialization</option>
+                    </select>
+                    <span asp-validation-for="SpecializationId" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Gender">Gender</label>
+                    <select asp-for="Gender" class="select" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <span asp-validation-for="Gender" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="SessionPrice">Session Price (EGP)</label>
+                    <input class="input" type="number" step="10" asp-for="SessionPrice" placeholder="500" required />
+                    <span asp-validation-for="SessionPrice" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="FollowUpFee">Follow-Up Fee (EGP)</label>
+                    <input class="input" type="number" step="10" asp-for="FollowUpFee" placeholder="150" />
+                    <span asp-validation-for="FollowUpFee" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Salary">Monthly Salary (EGP)</label>
+                    <input class="input" type="number" step="100" asp-for="Salary" placeholder="25000" required />
+                    <span asp-validation-for="Salary" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="DateOfBirth">Date of Birth</label>
+                    <input class="input" asp-for="DateOfBirth" type="date" required />
+                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Title">Title / Designation</label>
+                    <input class="input" asp-for="Title" placeholder="Consultant Specialist" />
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Credentials">Credentials</label>
+                    <input class="input" asp-for="Credentials" placeholder="MD, FRCS" />
+                </div>
+
+                <div class="form-field full">
+                    <label class="form-label" asp-for="ClinicRoom">Clinic Room</label>
+                    <input class="input" asp-for="ClinicRoom" placeholder="Main Pavilion · Clinic 305" />
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="Password">Password</label>
+                    <input class="input" type="password" asp-for="Password" placeholder="Minimum 6 characters" required />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" asp-for="ConfirmedPassword">Confirm Password</label>
+                    <input class="input" type="password" asp-for="ConfirmedPassword" placeholder="Confirm Password" required />
+                    <span asp-validation-for="ConfirmedPassword" class="text-danger"></span>
+                </div>
+
+                <div class="form-field full" style="margin-top:8px;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Create Doctor Account</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Card 2: Promote Existing Registered User -->
+    <section class="panel" aria-labelledby="promote-heading">
+        <div class="panel-head">
+            <h2 class="panel-title" id="promote-heading">Promote Existing User to Doctor / Staff</h2>
+            <span class="badge badge-success">RBAC Elevation</span>
+        </div>
+        <div class="panel-body">
+            <p class="card__subtitle" style="margin-bottom:16px;">
+                Registered users default to Patient accounts. Managers can elevate any existing user directly into a Doctor or Hospital Staff role.
+            </p>
+            <form asp-action="PromoteUser" asp-controller="Admin" method="post" class="form-grid">
+                <div class="form-field full">
+                    <label class="form-label" for="promoteUserId">Select Registered User</label>
+                    <select class="select" id="promoteUserId" name="userId" required>
+                        <option value="">Choose an existing account...</option>
+                        @foreach (var u in candidateUsers)
+                        {
+                            <option value="@u.Id">@u.FirstName @u.LastName (@u.Email)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="promoteRole">Target Hospital Role</label>
+                    <select class="select" id="promoteRole" name="targetRole" required>
+                        <option value="Doctor">Doctor (Attending Physician)</option>
+                        <option value="Receptionist">Receptionist</option>
+                        <option value="LabTechnician">Lab Technician</option>
+                        <option value="Radiologist">Radiologist</option>
+                        <option value="Pharmacist">Pharmacist</option>
+                        <option value="BillingOfficer">Billing Officer</option>
+                        <option value="HospitalAdmin">Hospital Manager</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="promoteSpec">Specialization (if Doctor)</label>
+                    <select class="select" id="promoteSpec" name="specializationId" asp-items="selectListItems">
+                        <option value="">Select Specialization</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="promoteFee">Session Price (EGP)</label>
+                    <input class="input" id="promoteFee" type="number" name="sessionPrice" value="450" />
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="promoteFollowUp">Follow-Up Fee (EGP)</label>
+                    <input class="input" id="promoteFollowUp" type="number" name="followUpFee" value="150" />
+                </div>
+
+                <div class="form-field full" style="margin-top:8px;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Promote Account &amp; Grant Role</button>
+                </div>
+            </form>
+        </div>
+    </section>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-    <script src="~/js/flash-dismiss.js" asp-append-version="true"></script>
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }

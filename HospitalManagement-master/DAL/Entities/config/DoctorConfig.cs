@@ -13,7 +13,10 @@ namespace Hospital.DAL.Entities.config
         public void Configure(EntityTypeBuilder<Doctor> builder)
         {
             builder.ToTable("Doctors");
-            
+            builder.Property(d => d.Salary).HasPrecision(18, 2);
+            builder.Property(d => d.SessionPrice).HasPrecision(18, 2);
+            builder.Property(d => d.FollowUpFee).HasPrecision(18, 2);
+            builder.Property(d => d.Rating).HasPrecision(4, 2);
         }
     }
 }

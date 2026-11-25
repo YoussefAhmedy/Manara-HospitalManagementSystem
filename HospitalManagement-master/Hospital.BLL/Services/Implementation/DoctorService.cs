@@ -26,17 +26,31 @@ namespace Hospital.BLL.Services.Implementation
 
         public List<PublicDoctorVm> GetPublicDoctorProfiles(int maximumResults)
         {
-            var take = Math.Clamp(maximumResults, 1, 12);
+            var take = Math.Clamp(maximumResults, 1, 32);
             return doctorRepository.GetPublicDoctors()
-                .OrderBy(doctor => doctor.FirstName)
-                .ThenBy(doctor => doctor.LastName)
+                .OrderByDescending(doctor => doctor.IsTopRated)
+                .ThenByDescending(doctor => doctor.Rating)
+                .ThenBy(doctor => doctor.FirstName)
                 .Take(take)
                 .Select(doctor => new PublicDoctorVm
                 {
                     Id = doctor.Id,
                     FirstName = doctor.FirstName,
                     LastName = doctor.LastName,
-                    SpecializationName = doctor.Specialization == null ? null : doctor.Specialization.Name
+                    SpecializationName = doctor.Specialization == null ? null : doctor.Specialization.Name,
+                    DepartmentName = doctor.Department == null ? (doctor.Specialization == null ? null : doctor.Specialization.Name) : doctor.Department.Name,
+                    Title = doctor.Title ?? "Consultant Specialist",
+                    Credentials = doctor.Credentials ?? "MD, Board Certified",
+                    Bio = doctor.Bio ?? "Board-certified specialist committed to serene, evidence-based clinical excellence at MANARA Medical Complex.",
+                    Image = doctor.Image,
+                    ClinicRoom = doctor.ClinicRoom ?? "Main Pavilion",
+                    SessionPrice = doctor.SessionPrice > 0 ? doctor.SessionPrice : 450m,
+                    FollowUpFee = doctor.FollowUpFee > 0 ? doctor.FollowUpFee : 150m,
+                    ExperienceYears = doctor.ExperienceYears > 0 ? doctor.ExperienceYears : 10,
+                    Rating = doctor.Rating > 0 ? doctor.Rating : 4.8m,
+                    ReviewCount = doctor.ReviewCount > 0 ? doctor.ReviewCount : 48,
+                    IsTopRated = doctor.IsTopRated,
+                    SealEmblem = doctor.SealEmblem ?? "MANARA • GUILD SEAL"
                 })
                 .ToList();
         }

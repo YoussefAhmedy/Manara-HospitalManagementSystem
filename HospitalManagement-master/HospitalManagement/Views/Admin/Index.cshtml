@@ -1,33 +1,43 @@
 @model AdminIndexVm
 @{
     ViewData["Title"] = "Operations overview";
+    ViewData["Subtitle"] = "Clinician access, schedules, and administrative records.";
 }
 
-<div class="container">
-<section class="page-header">
-    <div class="page-header__eyebrow">Administration</div>
-    <h1>Operations overview</h1>
-    <p>Manage clinician access, schedules, and operational records.</p>
-</section>
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Administration &bull; Command Center</span>
+        <h1 class="ws-title">Operations Overview</h1>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-primary btn-sm" asp-controller="Admin" asp-action="CreateDoctor">+ Create Doctor</a>
+        <a class="btn btn-sm" asp-controller="Admin" asp-action="CreateSchedule">+ Configure Schedule</a>
+    </div>
+</div>
 
 <section class="dashboard-grid" aria-label="Operations summary">
     <article class="stat-card dashboard-span-4"><div class="stat-card__label">Clinicians</div><div class="stat-card__value">@Model.NoOfDoctors</div></article>
-    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Patient accounts</div><div class="stat-card__value">@Model.NoOfPatients</div></article>
-    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Appointment requests</div><div class="stat-card__value">@Model.NoOfAppoint</div></article>
-    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Upcoming requests</div><div class="stat-card__value">@Model.NoOfNewAppoint</div></article>
-    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Approved today</div><div class="stat-card__value">@Model.NoOfTodayPatient</div></article>
-    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Medical records</div><div class="stat-card__value">@Model.NoOfMedical</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Patient Accounts</div><div class="stat-card__value">@Model.NoOfPatients</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Appointment Requests</div><div class="stat-card__value">@Model.NoOfAppoint</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Upcoming Requests</div><div class="stat-card__value">@Model.NoOfNewAppoint</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Approved Today</div><div class="stat-card__value">@Model.NoOfTodayPatient</div></article>
+    <article class="stat-card dashboard-span-4"><div class="stat-card__label">Medical Records</div><div class="stat-card__value">@Model.NoOfMedical</div></article>
 
     <section class="panel-card dashboard-span-12" aria-labelledby="admin-actions-heading">
-        <div class="panel-card__heading"><div><h2 id="admin-actions-heading">Administration tasks</h2><p>Access is restricted to administrator accounts.</p></div></div>
-        <div class="dashboard-actions">
-            <a class="button button--primary" asp-controller="Admin" asp-action="CreateDoctor">Create clinician account</a>
-            <a class="button" asp-controller="Admin" asp-action="ListDoctors">Manage clinicians</a>
-            <a class="button" asp-controller="Admin" asp-action="GetPatients">Patient accounts</a>
-            <a class="button" asp-controller="Admin" asp-action="CreateSchedule">Configure schedules</a>
-            <a class="button" asp-controller="Admin" asp-action="GetMedicalRecords">Records inventory</a>
+        <div class="panel-card__heading" style="padding:0 0 14px;border-bottom:1px solid var(--ws-border);margin-bottom:16px;">
+            <div>
+                <h2 id="admin-actions-heading">Administration Tasks</h2>
+                <p style="margin:2px 0 0;">Manage clinicians, promote registered accounts, and maintain clinic shifts.</p>
+            </div>
         </div>
-        <p class="form-hint mb-0">Record counts are provided for operations and do not expose clinical content.</p>
+        <div class="dashboard-actions">
+            <a class="btn btn-primary" asp-controller="Admin" asp-action="CreateDoctor">Create or Promote Clinician</a>
+            <a class="btn" asp-controller="Admin" asp-action="ListDoctors">Manage Clinicians</a>
+            <a class="btn" asp-controller="Admin" asp-action="GetPatients">Patient Accounts</a>
+            <a class="btn" asp-controller="Admin" asp-action="CreateSchedule">Configure Schedules</a>
+            <a class="btn" asp-controller="Admin" asp-action="CreateShift">Add Clinic Shift</a>
+            <a class="btn" asp-controller="Admin" asp-action="GetMedicalRecords">Records Inventory</a>
+        </div>
+        <p class="form-hint mb-0">Operational metrics reflect live SQL Server records under role-based access control.</p>
     </section>
 </section>
-</div>

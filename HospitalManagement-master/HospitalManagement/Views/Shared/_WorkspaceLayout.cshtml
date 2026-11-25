@@ -3,25 +3,24 @@
 @using Hospital.BLL.Helpers
 @using Hospital.BLL.Permissions
 @{
-    var title = ViewData["Title"] as string ?? "Workspace";
-    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var title = ViewData["Title"] as string ?? "Dashboard";
+    var subtitle = ViewData["Subtitle"] as string;
     var userName = User.FindFirst(ClaimTypes.GivenName)?.Value
         ?? User.Identity?.Name?.Split('@')[0]
-        ?? "Staff Member";
-    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "staff@manara.hospital";
+        ?? "Member";
     var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList();
     var primaryRole = roles.FirstOrDefault() ?? "Staff";
-    
+
     var roleKicker = primaryRole switch
     {
-        nameof(Role.SuperAdmin) or nameof(Role.HospitalAdmin) or nameof(Role.Admin) or nameof(Role.Management) => "Hospital Manager / Admin",
+        nameof(Role.SuperAdmin) or nameof(Role.HospitalAdmin) or nameof(Role.Admin) or nameof(Role.Management) => "Hospital Manager",
         nameof(Role.Doctor) => "Attending Physician",
-        nameof(Role.Patient) => "Patient Self-Service Portal",
+        nameof(Role.Patient) => "Patient Care Portal",
         nameof(Role.Receptionist) => "Front Desk & Reception",
-        nameof(Role.LabTechnician) => "Laboratory Specialist",
-        nameof(Role.Radiologist) => "Radiology Specialist",
+        nameof(Role.LabTechnician) => "Clinical Laboratory",
+        nameof(Role.Radiologist) => "Radiology & PACS",
         nameof(Role.Pharmacist) => "Clinical Pharmacist",
-        nameof(Role.BillingOfficer) => "Billing & Insurance Officer",
+        nameof(Role.BillingOfficer) => "Billing Officer",
         nameof(Role.Nurse) => "Nursing Staff",
         nameof(Role.Auditor) => "Clinical Auditor",
         _ => primaryRole
@@ -34,6 +33,7 @@
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
 
     bool Is(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+    bool IsAct(string controller, string action) => Is(controller) && string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
 
     bool IsAdmin = User.IsInRole(nameof(Role.Admin)) || User.IsInRole(nameof(Role.HospitalAdmin)) || User.IsInRole(nameof(Role.SuperAdmin)) || User.IsInRole(nameof(Role.Management));
     bool IsDoctor = User.IsInRole(nameof(Role.Doctor));
@@ -50,148 +50,170 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
-    <title>@title — MANARA Detached Workspace</title>
+    <title>@title — MANARA Workspace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/design-system.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/manara-dashboard.css" asp-append-version="true" />
     <script src="~/js/manara-sidebar.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="ws-dark">
     <div class="detached-app">
-        <!-- 224px Left Standalone Workspace Sidebar -->
+        <!-- Dark Left Workspace Sidebar -->
         <aside class="ws-sidebar no-print">
             <div class="ws-brand-bar">
-                <a class="ws-brand-lockup" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
+                <a class="ws-brand-lockup" asp-controller="Home" asp-action="Index">
                     <partial name="_ManaraLogo" model="22" />
                     <span>MANARA</span>
                 </a>
-                <span class="badge badge-teal" style="font-size:9.5px;">APP</span>
             </div>
 
             <div class="ws-scroll">
-                <div class="ws-user-box">
-                    <div class="ws-role-kicker">@roleKicker</div>
-                    <div class="ws-user-name">@userName</div>
-                    <div style="font-size:10.5px;color:var(--slate-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;">@userEmail</div>
-                </div>
-
-                <!-- Group: Workspace -->
                 <div class="ws-nav-group">Workspace</div>
-                <a class="ws-nav-btn @(Is("Dashboard") ? "active" : "")" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;">
+                <a class="ws-nav-btn @(Is("Dashboard") ? "active" : "")" asp-controller="Dashboard" asp-action="Index">
+                    <partial name="_Icon" model="@("dashboard")" />
                     <span>Dashboard Overview</span>
                 </a>
 
-                <!-- Group: Clinical Operations -->
+                @if (IsPatient)
+                {
+                    <a class="ws-nav-btn @(IsAct("Patient", "MyCare") ? "active" : "")" asp-controller="Patient" asp-action="MyCare">
+                        <partial name="_Icon" model="@("heart")" />
+                        <span>My Care &amp; Follow-Up</span>
+                    </a>
+                }
+
                 @if (IsAdmin || IsDoctor || IsRecep)
                 {
                     <div class="ws-nav-group">Clinical Operations</div>
-                    <a class="ws-nav-btn @(Is("Patients") ? "active" : "")" asp-controller="Patients" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Patients") ? "active" : "")" asp-controller="Patients" asp-action="Index">
+                        <partial name="_Icon" model="@("patients")" />
                         <span>Patients Registry</span>
                     </a>
                 }
 
                 @if (IsPatient)
                 {
-                    <a class="ws-nav-btn @(string.Equals(currentController, "Patient", StringComparison.OrdinalIgnoreCase) && string.Equals(currentAction, "ListAppointments", StringComparison.OrdinalIgnoreCase) ? "active" : "")" asp-controller="Patient" asp-action="ListAppointments" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(IsAct("Patient", "ListAppointments") || IsAct("Patient", "AddAppointment") ? "active" : "")" asp-controller="Patient" asp-action="ListAppointments">
+                        <partial name="_Icon" model="@("calendar")" />
                         <span>My Appointments</span>
                     </a>
                 }
                 else if (IsAdmin || IsDoctor || IsRecep)
                 {
-                    <a class="ws-nav-btn @(Is("Appointments") ? "active" : "")" asp-controller="Appointments" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Appointments") ? "active" : "")" asp-controller="Appointments" asp-action="Index">
+                        <partial name="_Icon" model="@("calendar")" />
                         <span>Appointments</span>
                     </a>
                 }
 
                 @if (IsAdmin || IsDoctor)
                 {
-                    <a class="ws-nav-btn @(Is("Encounters") ? "active" : "")" asp-controller="Encounters" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Encounters") ? "active" : "")" asp-controller="Encounters" asp-action="Index">
+                        <partial name="_Icon" model="@("stethoscope")" />
                         <span>Clinical Encounters</span>
                     </a>
                 }
 
-                <!-- Group: Diagnostics & Care -->
                 @if (IsAdmin || IsDoctor || IsLab || IsPatient)
                 {
                     <div class="ws-nav-group">Diagnostics &amp; Care</div>
-                    <a class="ws-nav-btn @(Is("Laboratory") ? "active" : "")" asp-controller="Laboratory" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Laboratory") ? "active" : "")" asp-controller="Laboratory" asp-action="Index">
+                        <partial name="_Icon" model="@("flask")" />
                         <span>Laboratory</span>
                     </a>
                 }
 
                 @if (IsAdmin || IsDoctor || IsRad || IsPatient)
                 {
-                    <a class="ws-nav-btn @(Is("Radiology") ? "active" : "")" asp-controller="Radiology" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Radiology") ? "active" : "")" asp-controller="Radiology" asp-action="Index">
+                        <partial name="_Icon" model="@("scan")" />
                         <span>Radiology &amp; PACS</span>
                     </a>
                 }
 
                 @if (IsAdmin || IsPharm || IsDoctor || IsPatient)
                 {
-                    <a class="ws-nav-btn @(Is("Pharmacy") ? "active" : "")" asp-controller="Pharmacy" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Pharmacy") ? "active" : "")" asp-controller="Pharmacy" asp-action="Index">
+                        <partial name="_Icon" model="@("pill")" />
                         <span>@(IsPatient ? "My Prescriptions (Rx)" : "Pharmacy & Stock")</span>
                     </a>
                 }
 
-                <!-- Group: Operations & Finance -->
-                @if (IsAdmin || IsDoctor || IsRecep)
+                @if (IsAdmin || IsDoctor || IsRecep || IsBill || IsPatient)
                 {
                     <div class="ws-nav-group">Operations &amp; Finance</div>
-                    <a class="ws-nav-btn @(Is("Admissions") ? "active" : "")" asp-controller="Admissions" asp-action="Index" style="text-decoration:none;">
+                }
+
+                @if (IsAdmin || IsDoctor || IsRecep)
+                {
+                    <a class="ws-nav-btn @(Is("Admissions") ? "active" : "")" asp-controller="Admissions" asp-action="Index">
+                        <partial name="_Icon" model="@("bed")" />
                         <span>Admissions &amp; Beds</span>
                     </a>
                 }
 
                 @if (IsAdmin || IsBill || IsPatient)
                 {
-                    @if (!IsAdmin && !IsDoctor && !IsRecep)
-                    {
-                        <div class="ws-nav-group">Operations &amp; Finance</div>
-                    }
-                    <a class="ws-nav-btn @(Is("Billing") ? "active" : "")" asp-controller="Billing" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Billing") ? "active" : "")" asp-controller="Billing" asp-action="Index">
+                        <partial name="_Icon" model="@("invoice")" />
                         <span>Billing &amp; Invoices</span>
                     </a>
                 }
 
-                <!-- Group: Governance -->
+                <div class="ws-nav-group">Governance</div>
                 @if (IsPatient)
                 {
-                    <div class="ws-nav-group">Governance</div>
-                    <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="ExaminationReport" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="ExaminationReport">
+                        <partial name="_Icon" model="@("report")" />
                         <span>My Examination Sheet</span>
                     </a>
                 }
-                else if (IsAdmin || IsDoctor || IsLab || IsRad || IsPharm || IsBill)
+                else
                 {
-                    <div class="ws-nav-group">Governance</div>
-                    <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Reports") ? "active" : "")" asp-controller="Reports" asp-action="Index">
+                        <partial name="_Icon" model="@("report")" />
                         <span>Reports &amp; Exam Sheet</span>
                     </a>
                 }
 
                 @if (IsAdmin)
                 {
-                    <a class="ws-nav-btn @(Is("Admin") ? "active" : "")" asp-controller="Admin" asp-action="Index" style="text-decoration:none;">
-                        <span>Staff, Branches &amp; Shifts</span>
+                    <a class="ws-nav-btn @(Is("Admin") ? "active" : "")" asp-controller="Admin" asp-action="Index">
+                        <partial name="_Icon" model="@("users")" />
+                        <span>Staff, Doctors &amp; Shifts</span>
                     </a>
-                    <a class="ws-nav-btn @(Is("Audit") ? "active" : "")" asp-controller="Audit" asp-action="Index" style="text-decoration:none;">
+                    <a class="ws-nav-btn @(Is("Audit") ? "active" : "")" asp-controller="Audit" asp-action="Index">
+                        <partial name="_Icon" model="@("shield")" />
                         <span>Audit Log &amp; RBAC</span>
                     </a>
                 }
             </div>
 
+            <!-- Visible Sidebar Footer: Avatar + User + Role + Settings & Sign Out -->
             <div class="ws-sidebar-foot">
-                <a class="btn btn-outline btn-xs" asp-controller="Account" asp-action="LogIn" style="color:var(--white);border-color:rgba(255,255,255,0.24);width:100%;text-decoration:none;text-align:center;">
-                    Switch Account
-                </a>
-                <form asp-controller="Account" asp-action="LogOff" method="post" style="width:100%;margin:0;">
-                    <button type="submit" class="btn btn-outline btn-xs" style="color:var(--white);border-color:rgba(255,255,255,0.24);width:100%;">
-                        Sign Out
-                    </button>
-                </form>
+                <div class="ws-foot-user">
+                    <span class="ws-foot-avatar">@initials</span>
+                    <div class="ws-foot-meta">
+                        <div class="ws-foot-name">@userName</div>
+                        <div class="ws-foot-role">@roleKicker</div>
+                    </div>
+                </div>
+                <div class="ws-foot-actions">
+                    <a class="ws-foot-btn" asp-controller="Account" asp-action="Settings">
+                        <partial name="_Icon" model="@("settings")" />
+                        <span>Settings</span>
+                    </a>
+                    <form asp-controller="Account" asp-action="LogOut" method="post" style="margin:0;">
+                        <button type="submit" class="ws-foot-btn danger">
+                            <partial name="_Icon" model="@("logout")" />
+                            <span>Sign Out</span>
+                        </button>
+                    </form>
+                </div>
             </div>
         </aside>
 
@@ -199,17 +221,18 @@
         <div class="ws-right">
             <header class="ws-topbar no-print">
                 <div class="ws-topbar-left">
-                    <a class="btn btn-outline btn-xs" id="backToWebsiteLink" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
-                        &larr; Back to Manara Website
-                    </a>
-                    <span class="badge badge-navy">@roleKicker</span>
+                    <span class="ws-topbar-crumb">@title</span>
+                    @if (!string.IsNullOrWhiteSpace(subtitle))
+                    {
+                        <span class="ws-topbar-sub">&bull; @subtitle</span>
+                    }
                 </div>
                 <div class="ws-topbar-right">
-                    <span style="font-size:11.5px;color:var(--slate);">Main Medical Center &bull; DEMO</span>
-                    <span class="user-chip" style="cursor:default;">
-                        <span class="user-dot">@initials</span>
-                        <span>@userName</span>
-                    </span>
+                    @await RenderSectionAsync("PageActions", required: false)
+                    <a class="ws-back-link" id="backToWebsiteLink" asp-controller="Home" asp-action="Index">
+                        <partial name="_Icon" model="@("arrow-left")" />
+                        <span>Manara Website</span>
+                    </a>
                 </div>
             </header>
 
@@ -224,7 +247,7 @@
         <div class="modal" id="modalBox">
             <div class="modal-head">
                 <h3 class="modal-title" id="modalTitle">Dialog</h3>
-                <button type="button" class="btn btn-outline btn-xs" id="modalCloseBtn">&times;</button>
+                <button type="button" class="btn btn-sm" id="modalCloseBtn">&times;</button>
             </div>
             <div class="modal-body" id="modalBody"></div>
             <div class="modal-foot" id="modalFooter"></div>

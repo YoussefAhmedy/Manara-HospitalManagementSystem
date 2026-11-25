@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using Hospital.BLL.Services.Abstraction;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Hospital.DAL.DataBase;
 
 namespace HospitalManagement.Controllers
 {
@@ -28,13 +30,15 @@ namespace HospitalManagement.Controllers
         private readonly IShiftService shiftService;
         private readonly IScheduleService scheduleService;
         private readonly IAppointmentService appointmentService;
+        private readonly HospitalDbContext dbContext;
 
         public AdminController(IMapper mapper, IEmailQueue emailQueue, IAuditLogger auditLogger,
             UserManager<ApplicationUser> userManager,
             ILogger<AdminController> logger, ISepcializationService sepcializationService,
             IDoctorService doctorService, IPatientService patientService,
             ImedicalRecordService medicalRecordService, IShiftService shiftService,
-            IScheduleService scheduleService, IAppointmentService appointmentService)
+            IScheduleService scheduleService, IAppointmentService appointmentService,
+            HospitalDbContext dbContext)
         {
             this.mapper = mapper;
             this.emailQueue = emailQueue;
@@ -48,6 +52,7 @@ namespace HospitalManagement.Controllers
             this.shiftService = shiftService;
             this.scheduleService = scheduleService;
             this.appointmentService = appointmentService;
+            this.dbContext = dbContext;
         }
         public IActionResult Index()
         {
@@ -70,11 +75,19 @@ namespace HospitalManagement.Controllers
             return View(model);
         }
 
-        public IActionResult CreateDoctor()
+        public async Task<IActionResult> CreateDoctor()
         {
+            ViewBag.CandidateUsers = await dbContext.Users.AsNoTracking()
+                .Where(u => !dbContext.Doctors.Any(d => d.Id == u.Id))
+                .OrderBy(u => u.FirstName)
+                .Take(40)
+                .ToListAsync();
+
             CreateDoctorViewModel createDoctorViewModel = new CreateDoctorViewModel()
             {
-                Specializations = sepcializationService.GetSpecializations()
+                Specializations = sepcializationService.GetSpecializations(),
+                FollowUpFee = 150m,
+                SessionPrice = 450m
             };
 
             return View(createDoctorViewModel);
@@ -85,6 +98,12 @@ namespace HospitalManagement.Controllers
         public async Task<IActionResult> CreateDoctor(CreateDoctorViewModel model)
         {
             model.Specializations = sepcializationService.GetSpecializations();
+            ViewBag.CandidateUsers = await dbContext.Users.AsNoTracking()
+                .Where(u => !dbContext.Doctors.Any(d => d.Id == u.Id))
+                .OrderBy(u => u.FirstName)
+                .Take(40)
+                .ToListAsync();
+
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -93,7 +112,13 @@ namespace HospitalManagement.Controllers
             var doctor = mapper.Map<Doctor>(model);
             doctor.Email = model.Email.Trim();
             doctor.UserName = doctor.Email;
+            doctor.EmailConfirmed = true;
             doctor.Specialization = await sepcializationService.GetSpecialization(model.SpecializationId);
+            doctor.FollowUpFee = model.FollowUpFee > 0 ? model.FollowUpFee : Math.Round(model.SessionPrice * 0.35m, 0);
+            doctor.Credentials = string.IsNullOrWhiteSpace(model.Credentials) ? "MD, Board Certified" : model.Credentials.Trim();
+            doctor.Title = string.IsNullOrWhiteSpace(model.Title) ? "Consultant Specialist" : model.Title.Trim();
+            doctor.ClinicRoom = string.IsNullOrWhiteSpace(model.ClinicRoom) ? "Main Pavilion" : model.ClinicRoom.Trim();
+            doctor.IsActive = true;
             doctor.CreatedAt = DateTime.UtcNow;
 
             var createResult = await userManager.CreateAsync(doctor, model.Password);
@@ -115,26 +140,50 @@ namespace HospitalManagement.Controllers
                 return View(model);
             }
 
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(doctor);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var confirmationUrl = Url.Action(
-                nameof(AccountController.ConfirmEmail), "Account",
-                new { id = doctor.Id, code = encodedToken }, Request.Scheme);
-            var emailQueued = confirmationUrl is not null && emailQueue.TryEnqueue(
-                doctor.Email!, "Confirm your CareAxis clinician account",
-                EmailTemplates.AccountConfirmation(doctor.FirstName, confirmationUrl));
-
             await auditLogger.RecordAsync("admin.doctor-created", User.FindFirstValue(ClaimTypes.NameIdentifier),
                 doctor.Id, "user", doctor.Id);
-            logger.LogInformation("A clinician account was created by an administrator.");
-            ViewBag.Success = emailQueued
-                ? "Clinician account created. The clinician must verify their email before signing in."
-                : "Clinician account created, but verification email delivery is not configured. No password was emailed.";
+            TempData["StatusMessage"] = $"Clinician account Dr. {doctor.FirstName} {doctor.LastName} ({doctor.Email}) created successfully.";
+            return RedirectToAction(nameof(ListDoctors));
+        }
 
-            return View(new CreateDoctorViewModel
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PromoteUser(string userId, string targetRole, int? specializationId, decimal sessionPrice = 450m, decimal followUpFee = 150m)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
             {
-                Specializations = sepcializationService.GetSpecializations()
-            });
+                TempData["ErrorMessage"] = "Selected user account was not found.";
+                return RedirectToAction(nameof(CreateDoctor));
+            }
+
+            if (string.Equals(targetRole, nameof(Role.Doctor), StringComparison.OrdinalIgnoreCase))
+            {
+                if (!await dbContext.Doctors.AnyAsync(d => d.Id == user.Id))
+                {
+                    // TPT table insertion for Doctor subclass
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                        $"""
+                        INSERT INTO dbo.Doctors (Id, Salary, SessionPrice, FollowUpFee, ExperienceYears, Rating, ReviewCount, IsTopRated, SlotMinutes, SpecializationId, IsActive, Credentials, Title, ClinicRoom)
+                        VALUES ({user.Id}, {24000m}, {sessionPrice}, {followUpFee}, {8}, {4.8m}, {12}, {false}, {30}, {specializationId}, {true}, {"MD"}, {"Specialist Physician"}, {"Main Pavilion"})
+                        """);
+                }
+                if (!await userManager.IsInRoleAsync(user, Role.Doctor.ToString()))
+                {
+                    await userManager.AddToRoleAsync(user, Role.Doctor.ToString());
+                }
+            }
+            else if (Enum.TryParse<Role>(targetRole, out var parsedRole))
+            {
+                if (!await userManager.IsInRoleAsync(user, parsedRole.ToString()))
+                {
+                    await userManager.AddToRoleAsync(user, parsedRole.ToString());
+                }
+            }
+
+            await auditLogger.RecordAsync("admin.user-promoted", User.FindFirstValue(ClaimTypes.NameIdentifier), user.Id, "user", user.Id);
+            TempData["StatusMessage"] = $"Account {user.Email} promoted to {targetRole} successfully.";
+            return RedirectToAction(nameof(ListDoctors));
         }
 
         public IActionResult ListDoctors()

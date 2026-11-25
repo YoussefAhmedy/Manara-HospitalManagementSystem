@@ -15,5 +15,14 @@ public class Department
     public int? BranchId { get; set; }
     public Branch? Branch { get; set; }
 
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    [MaxLength(300)]
+    public string? Capabilities { get; set; }
+
+    [MaxLength(60)]
+    public string? FloorLocation { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

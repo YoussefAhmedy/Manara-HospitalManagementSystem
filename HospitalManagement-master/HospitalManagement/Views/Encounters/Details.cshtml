@@ -369,11 +369,17 @@ else
                                 }
                             </select>
                         </div>
-                        <input class="input input--sm" name="dose" placeholder="Dose e.g. 1 tablet" required />
-                        <input class="input input--sm" name="frequency" placeholder="Frequency e.g. twice daily" required />
-                        <input class="input input--sm" name="duration" placeholder="Duration e.g. 5 days" required />
-                        <input class="input input--sm" name="route" placeholder="Route e.g. oral" />
-                        <button class="btn btn--sm btn--primary" type="submit">Send to pharmacy</button>
+                        <input class="input input--sm" name="dose" placeholder="Dose e.g. 1 tablet (500 mg)" required />
+                        <input class="input input--sm" name="frequency" placeholder="Frequency e.g. Twice daily" required />
+                        <input class="input input--sm" name="duration" placeholder="Duration e.g. 14 days" required />
+                        <input class="input input--sm" name="route" placeholder="Route e.g. Oral" />
+                        <input class="input input--sm" name="intakeSchedule" placeholder="Intake times e.g. 08:00 AM after breakfast • 08:00 PM" />
+                        <input class="input input--sm" name="instructions" placeholder="Clinical instructions for patient" />
+                        <div class="field">
+                            <label class="field__label" for="rxFup">Next Follow-Up Date (Optional)</label>
+                            <input class="input input--sm" id="rxFup" type="date" name="nextFollowUpDate" />
+                        </div>
+                        <button class="btn btn--sm btn--primary" type="submit">Issue Prescription to Pharmacy</button>
                     </form>
                     <p class="field__hint" style="margin-top:var(--space-2)">Prescriptions are reviewed by a pharmacist before dispensing.</p>
                 </div>

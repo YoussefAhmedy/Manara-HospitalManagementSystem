@@ -1,0 +1,64 @@
+@using Hospital.BLL.ModelVM
+@model SettingsVm
+@{
+    ViewData["Title"] = "Settings & Preferences";
+    ViewData["Subtitle"] = "Manage account security, accessibility display scale, and personal details.";
+}
+
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Account &amp; Workspace Preferences</span>
+        <h1 class="ws-title">Settings</h1>
+    </div>
+    <a class="btn btn-sm" asp-controller="Account" asp-action="Profile">Edit Full Profile</a>
+</div>
+
+<div class="grid-2">
+    <section class="panel" aria-labelledby="security-heading">
+        <div class="panel-head">
+            <h2 class="panel-title" id="security-heading">Password &amp; Security</h2>
+            <span class="badge badge-navy">@string.Join(", ", Model.Roles)</span>
+        </div>
+        <div class="panel-body">
+            <form asp-controller="Account" asp-action="ChangePassword" method="post" class="form-grid">
+                <div class="form-field full">
+                    <label class="form-label" for="curPw">Current Password</label>
+                    <input class="input" id="curPw" type="password" name="CurrentPassword" required autocomplete="current-password" />
+                </div>
+                <div class="form-field">
+                    <label class="form-label" for="newPw">New Password</label>
+                    <input class="input" id="newPw" type="password" name="NewPassword" required autocomplete="new-password" />
+                </div>
+                <div class="form-field">
+                    <label class="form-label" for="confPw">Confirm New Password</label>
+                    <input class="input" id="confPw" type="password" name="ConfirmNewPassword" required autocomplete="new-password" />
+                </div>
+                <div class="form-field full">
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel" aria-labelledby="pref-heading">
+        <div class="panel-head">
+            <h2 class="panel-title" id="pref-heading">Interface &amp; Accessibility</h2>
+        </div>
+        <div class="panel-body stack" style="gap:16px;">
+            <div class="care-tile">
+                <span class="care-tile__icon"><partial name="_Icon" model="@("eye")" /></span>
+                <div style="flex:1;">
+                    <div style="font-weight:700;font-size:13px;">Large Accessible Typography</div>
+                    <div style="font-size:12px;color:var(--ws-text-secondary, var(--slate));">Increases workspace base font size for easier clinical reading.</div>
+                </div>
+                <input type="checkbox" id="wsFontSizeToggle" aria-label="Toggle large workspace typography" />
+            </div>
+
+            <div class="dl">
+                <dt>Signed In As</dt><dd>@Model.Profile.FirstName @Model.Profile.LastName</dd>
+                <dt>Account Email</dt><dd>@Model.Profile.Email</dd>
+                <dt>Phone</dt><dd>@(Model.Profile.PhoneNumber ?? "Not provided")</dd>
+            </div>
+        </div>
+    </section>
+</div>

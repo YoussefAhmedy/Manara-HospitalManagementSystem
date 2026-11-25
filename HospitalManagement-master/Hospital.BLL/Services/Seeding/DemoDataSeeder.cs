@@ -501,17 +501,33 @@ public sealed class DemoDataSeeder(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 1. Ensure all 8 Departments
-        var deptDefs = new (string Name, string Code)[]
+        // 1. Ensure all 8 Departments with rich clinical metadata
+        var deptDefs = new (string Name, string Code, string Floor, string Desc, string Caps)[]
         {
-            ("Cardiology", "CARD"),
-            ("Internal Medicine", "IM"),
-            ("Orthopedics", "ORTH"),
-            ("Pediatrics", "PED"),
-            ("Radiology & Imaging", "RAD"),
-            ("Clinical Laboratory", "LAB"),
-            ("Neurology", "NEUR"),
-            ("Dermatology", "DERM")
+            ("Cardiology", "CARD", "Main Pavilion · Floor 3",
+             "Comprehensive heart, vascular, and rhythm diagnostics with non-invasive stress testing and preventive cardiac rehabilitation.",
+             "12-Lead ECG · Echocardiography · Holter Monitoring · Lipid Risk Clinic"),
+            ("Internal Medicine", "IM", "Main Pavilion · Floor 2",
+             "Holistic adult primary and chronic disease care covering diabetes, metabolic disorders, thyroid balance, and executive wellness.",
+             "Metabolic Panels · Endocrinology · Hypertension Care · Preventive Screening"),
+            ("Orthopedics", "ORTH", "Surgical Wing · Floor 1",
+             "Specialized joint preservation, sports injury recovery, spine stabilization, and minimally invasive arthroscopic procedures.",
+             "Sports Rehabilitation · Arthroscopy · Fracture Clinic · Spine Consults"),
+            ("Pediatrics", "PED", "Family Pavilion · Floor 1",
+             "Gentle developmental care, neonatal follow-up, childhood immunizations, and acute pediatric consultations in a calm sanctuary.",
+             "Well-Child Visits · Growth Tracking · Adolescent Care · Immunizations"),
+            ("Radiology & Imaging", "RAD", "Diagnostic Center · Ground",
+             "High-resolution 3T MRI, low-dose multi-slice CT, digital radiography, and consultant-verified PACS diagnostic reporting.",
+             "3T MRI · Multi-Slice CT · Digital X-Ray · Doppler Ultrasound"),
+            ("Clinical Laboratory", "LAB", "Diagnostic Center · Ground",
+             "Automated hematology, clinical chemistry, endocrinology assays, and a strict two-stage clinical verification safety gate.",
+             "Hematology · HbA1c & Lipids · Microbiology · Dual-Verified Results"),
+            ("Neurology", "NEUR", "Neuroscience Suite · Floor 4",
+             "Precision evaluation of migraine, epilepsy, peripheral neuropathy, memory disorders, and clinical neurophysiology.",
+             "EEG Monitoring · Nerve Conduction · Migraine Clinic · Stroke Follow-Up"),
+            ("Dermatology", "DERM", "Aesthetic & Clinical Wing · Floor 2",
+             "Evidence-based medical dermatology, dermoscopy skin screening, allergic dermatitis treatment, and minor dermatologic surgery.",
+             "Digital Dermoscopy · Allergy Patching · Eczema Care · Minor Surgery")
         };
 
         var depts = new Dictionary<string, Department>(StringComparer.OrdinalIgnoreCase);
@@ -520,13 +536,26 @@ public sealed class DemoDataSeeder(
             var dept = await dbContext.Departments.FirstOrDefaultAsync(d => d.Code == def.Code || d.Name == def.Name, cancellationToken);
             if (dept == null)
             {
-                dept = new Department { Name = def.Name, Code = def.Code, Branch = branch };
+                dept = new Department
+                {
+                    Name = def.Name,
+                    Code = def.Code,
+                    Branch = branch,
+                    FloorLocation = def.Floor,
+                    Description = def.Desc,
+                    Capabilities = def.Caps,
+                    IsActive = true
+                };
                 dbContext.Departments.Add(dept);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
-            else if (dept.Name != def.Name)
+            else
             {
                 dept.Name = def.Name;
+                dept.FloorLocation = def.Floor;
+                dept.Description = def.Desc;
+                dept.Capabilities = def.Caps;
+                dept.IsActive = true;
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             depts[def.Name] = dept;
@@ -567,8 +596,8 @@ public sealed class DemoDataSeeder(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 4. Ensure Core 8 Role Demo Accounts (both .internal and .hospital for compatibility)
-        async Task EnsureUserAsync(string email, string password, string first, string last, string gender, string[] roles)
+        // 4. Ensure Core Staff & Patient Accounts using clean firstname.role@gmail.com convention
+        async Task<ApplicationUser?> EnsureUserAsync(string email, string password, string first, string last, string gender, string[] roles)
         {
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
@@ -592,118 +621,195 @@ public sealed class DemoDataSeeder(
                     }
                 }
             }
+            return user;
         }
 
-        // Admin
-        await EnsureUserAsync("admin@manara.internal", "Admin@2026", "Youssef", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
-        await EnsureUserAsync("admin@manara.hospital", "Admin@2026", "Youssef", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
+        await EnsureUserAsync("omar.admin@gmail.com", "Admin@2026", "Omar", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
+        await EnsureUserAsync("nourhan.receptionist@gmail.com", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
+        await EnsureUserAsync("hossam.labtech@gmail.com", "Lab@2026", "Hossam", "Gamal", "Male", [Role.LabTechnician.ToString()]);
+        await EnsureUserAsync("ramez.radiologist@gmail.com", "Rad@2026", "Ramez", "Mansour", "Male", [Role.Radiologist.ToString()]);
+        await EnsureUserAsync("mona.pharmacist@gmail.com", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
+        await EnsureUserAsync("sherif.billing@gmail.com", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
 
-        // Patient
-        var pat1 = await userManager.FindByEmailAsync("patient@manara.internal");
-        if (pat1 == null)
+        // Primary Patient with seeded recovery & care plan
+        var ahmedPatient = await userManager.FindByEmailAsync("ahmed.patient@gmail.com") as Patient;
+        if (ahmedPatient == null)
         {
-            var p = new Patient
+            ahmedPatient = new Patient
             {
-                UserName = "patient@manara.internal",
-                Email = "patient@manara.internal",
+                UserName = "ahmed.patient@gmail.com",
+                Email = "ahmed.patient@gmail.com",
                 EmailConfirmed = true,
                 FirstName = "Ahmed",
-                LastName = "Hassan Ibrahim",
+                LastName = "Hassan",
                 Gender = "Male",
-                DateOfBirth = new DateTime(1982, 5, 14, 0, 0, 0, DateTimeKind.Utc),
+                DateOfBirth = new DateTime(1985, 6, 18, 0, 0, 0, DateTimeKind.Utc),
                 PhoneNumber = "+20 100 555 0142",
+                Address = "14 Cornish Boulevard, Alexandria",
+                EmergencyContact = "Heba Hassan (+20 100 555 0198)",
                 BloodGroup = "O+",
                 Mrn = "MRN-10042",
+                RecoveryProgress = 82,
+                ActiveCondition = "Essential Hypertension & Lipid Management",
+                DoctorCareNotes = "Blood pressure is trending steadily within target range. Continue morning medication with breakfast, limit sodium intake, walk 30 minutes daily, and return in 14 days for follow-up ECG.",
+                NextFollowUpDate = DateTime.UtcNow.Date.AddDays(14),
                 IsSynthetic = true,
                 CreatedAt = DateTime.UtcNow
             };
-            if ((await userManager.CreateAsync(p, "Patient@2026")).Succeeded)
+            if ((await userManager.CreateAsync(ahmedPatient, "Patient@2026")).Succeeded)
             {
-                await userManager.AddToRoleAsync(p, Role.Patient.ToString());
+                await userManager.AddToRoleAsync(ahmedPatient, Role.Patient.ToString());
             }
         }
-        var pat2 = await userManager.FindByEmailAsync("ahmed.hassan@patient.manara");
-        if (pat2 == null)
+        else
         {
-            var p = new Patient
+            ahmedPatient.RecoveryProgress = ahmedPatient.RecoveryProgress == 0 ? 82 : ahmedPatient.RecoveryProgress;
+            ahmedPatient.ActiveCondition ??= "Essential Hypertension & Lipid Management";
+            ahmedPatient.DoctorCareNotes ??= "Blood pressure is trending steadily within target range. Continue morning medication with breakfast, limit sodium intake, walk 30 minutes daily, and return in 14 days for follow-up ECG.";
+            ahmedPatient.NextFollowUpDate ??= DateTime.UtcNow.Date.AddDays(14);
+            await userManager.UpdateAsync(ahmedPatient);
+        }
+
+        var nadiaPatient = await userManager.FindByEmailAsync("nadia.patient@gmail.com") as Patient;
+        if (nadiaPatient == null)
+        {
+            nadiaPatient = new Patient
             {
-                UserName = "ahmed.hassan@patient.manara",
-                Email = "ahmed.hassan@patient.manara",
+                UserName = "nadia.patient@gmail.com",
+                Email = "nadia.patient@gmail.com",
                 EmailConfirmed = true,
-                FirstName = "Ahmed",
-                LastName = "Hassan Ibrahim",
-                Gender = "Male",
-                DateOfBirth = new DateTime(1982, 5, 14, 0, 0, 0, DateTimeKind.Utc),
-                PhoneNumber = "+20 100 555 0142",
-                BloodGroup = "O+",
-                Mrn = "MRN-10042",
+                FirstName = "Nadia",
+                LastName = "Mahmoud",
+                Gender = "Female",
+                DateOfBirth = new DateTime(1992, 9, 10, 0, 0, 0, DateTimeKind.Utc),
+                PhoneNumber = "+20 101 444 0210",
+                Address = "28 Zamalek Gardens, Cairo",
+                BloodGroup = "A+",
+                Mrn = "MRN-10089",
+                RecoveryProgress = 68,
+                ActiveCondition = "Seasonal Bronchial Sensitivity",
+                DoctorCareNotes = "Airway inflammation improving. Complete prescribed course and keep evening inhaler available if dry cough persists.",
+                NextFollowUpDate = DateTime.UtcNow.Date.AddDays(10),
                 IsSynthetic = true,
                 CreatedAt = DateTime.UtcNow
             };
-            if ((await userManager.CreateAsync(p, "Patient@2026")).Succeeded)
+            if ((await userManager.CreateAsync(nadiaPatient, "Patient@2026")).Succeeded)
             {
-                await userManager.AddToRoleAsync(p, Role.Patient.ToString());
+                await userManager.AddToRoleAsync(nadiaPatient, Role.Patient.ToString());
             }
         }
 
-        // Receptionist
-        await EnsureUserAsync("reception@manara.internal", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
-        await EnsureUserAsync("reception@manara.hospital", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
+        // Deactivate legacy non-portrait doctors so public showcase reflects only the 16 unique MANARA specialists
+        var legacyDoctors = await dbContext.Doctors
+            .Where(d => d.Email != null && (d.Email.EndsWith("@example.invalid") || d.Email.EndsWith("@manara.internal") || d.Email.EndsWith("@manara.hospital")))
+            .ToListAsync(cancellationToken);
+        foreach (var leg in legacyDoctors)
+        {
+            leg.IsActive = false;
+        }
+        if (legacyDoctors.Count > 0)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
 
-        // Pharmacist
-        await EnsureUserAsync("pharmacy@manara.internal", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
-        await EnsureUserAsync("pharmacy@manara.hospital", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
-
-        // Billing
-        await EnsureUserAsync("billing@manara.internal", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
-        await EnsureUserAsync("billing@manara.hospital", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
-
-        // 5. Seed the 16 Specialist Doctors across all 8 Departments (2 Doctors each)
-        var doctorCatalog = new (string Email, string First, string Last, string Gender, string DeptName, string Room, decimal Fee, decimal Salary, string Img, DayOfWeek[] Days)[]
+        // 5. Seed the 16 Unique-Portrait Specialist Doctors across all 8 Departments (2 Doctors each)
+        var doctorCatalog = new (
+            string Email, string First, string Last, string Gender, string DeptName,
+            string Title, string Credentials, string Room, decimal Fee, decimal FollowUpFee,
+            int ExpYears, decimal Rating, int Reviews, bool TopRated, string Bio, string Img, string Seal, DayOfWeek[] Days)[]
         {
             // Cardiology
-            ("dr.salma@manara.hospital", "Salma", "El-Sayed", "Female", "Cardiology", "Clinic 301", 450, 28000, "doc-salma.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
-            ("dr.vance@manara.internal", "Marcus", "Vance", "Male", "Cardiology", "Clinic 302", 500, 32000, "doc-marcus.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("salma.cardiologist@gmail.com", "Salma", "El-Sayed", "Female", "Cardiology",
+             "Senior Consultant Cardiologist", "MD, FESC", "Clinic 301", 600, 200, 14, 4.95m, 186, true,
+             "Fellow of the European Society of Cardiology specializing in echocardiography, preventive heart care, and women's cardiovascular wellness.",
+             "doc-salma.jpg", "CARDIAC EXCELLENCE • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("hisham.cardiologist@gmail.com", "Hisham", "El-Masry", "Male", "Cardiology",
+             "Consultant Interventional Cardiologist", "MD, FACC", "Clinic 302", 700, 220, 16, 4.85m, 119, false,
+             "Specialist in coronary risk stratification, complex hypertension therapy, and non-invasive cardiac diagnostics.",
+             "doc-hisham.jpg", "HEART INSTITUTE • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
 
             // Internal Medicine
-            ("doctor.karim@manara.internal", "Karim", "Mansour", "Male", "Internal Medicine", "Clinic 204", 350, 24000, "doc-karim.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Wednesday]),
-            ("dr.rostova@manara.internal", "Elena", "Rostova", "Female", "Internal Medicine", "Clinic 205", 400, 26000, "doc-elena.jpg", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("karim.internist@gmail.com", "Karim", "Mansour", "Male", "Internal Medicine",
+             "Head of Internal Medicine", "MD, MRCP", "Clinic 204", 450, 150, 18, 4.88m, 142, false,
+             "Royal College of Physicians fellow leading comprehensive metabolic screening, diabetes care, and adult chronic disease programs.",
+             "doc-karim.jpg", "INTERNAL MEDICINE • MANARA", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("mariam.internist@gmail.com", "Mariam", "Soliman", "Female", "Internal Medicine",
+             "Consultant Endocrinologist", "MD, PhD", "Clinic 205", 500, 160, 12, 4.84m, 97, false,
+             "Dedicated to thyroid disorders, hormonal longevity, insulin resistance, and personalized executive health plans.",
+             "doc-mariam.jpg", "METABOLIC CARE • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
             // Orthopedics
-            ("dr.tarek@manara.internal", "Tarek", "Nabil", "Male", "Orthopedics", "Clinic 112", 400, 27000, "doc-tarek.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
-            ("dr.chen@manara.internal", "Arthur", "Chen", "Male", "Orthopedics", "Clinic 114", 450, 29000, "doc-chen.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("tarek.orthopedist@gmail.com", "Tarek", "Nabil", "Male", "Orthopedics",
+             "Consultant Orthopedic Surgeon", "MD, FRCS", "Clinic 112", 550, 180, 19, 4.92m, 164, true,
+             "Senior orthopedic reconstructive specialist focused on minimally invasive joint arthroscopy and spine preservation.",
+             "doc-tarek.jpg", "JOINT & SPINE • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("sherif.orthopedist@gmail.com", "Sherif", "El-Shazly", "Male", "Orthopedics",
+             "Sports Injury & Joint Specialist", "MD, FAAOS", "Clinic 114", 600, 200, 13, 4.78m, 88, false,
+             "Sports medicine consultant guiding athletes and active adults through ligament recovery and precision biomechanics.",
+             "doc-sherif.jpg", "SPORTS ORTHOPEDICS • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
 
             // Pediatrics
-            ("dr.nadia@manara.internal", "Nadia", "Farouk", "Female", "Pediatrics", "Clinic 105", 350, 23000, "doc-nadia.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
-            ("dr.amara@manara.internal", "Amara", "Okafor", "Female", "Pediatrics", "Clinic 107", 380, 25000, "doc-amara.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("nadia.pediatrician@gmail.com", "Nadia", "Farouk", "Female", "Pediatrics",
+             "Senior Specialist Pediatrician", "MD, MRCPCH", "Clinic 105", 400, 120, 11, 4.94m, 158, true,
+             "Gentle family pediatrician focusing on early childhood milestones, respiratory wellness, and preventive immunization.",
+             "doc-nadia.jpg", "CHILD WELLNESS • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("hana.pediatrician@gmail.com", "Hana", "Abdelrahman", "Female", "Pediatrics",
+             "Consultant Adolescent Pediatrician", "MD, DCH", "Clinic 107", 380, 120, 9, 4.86m, 134, false,
+             "Warm, attentive pediatric specialist dedicated to developmental nutrition, pediatric allergy management, and newborn follow-up.",
+             "doc-hana.jpg", "PEDIATRIC SANCTUARY • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
             // Radiology & Imaging
-            ("radiology@manara.internal", "Hisham", "Fouad", "Male", "Radiology & Imaging", "Imaging Suite 1", 300, 24000, "doc-hisham.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday]),
-            ("dr.khatib@manara.internal", "Sofia", "Al-Khatib", "Female", "Radiology & Imaging", "Imaging Suite 2", 320, 25000, "doc-sofia.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("amr.radiologist@gmail.com", "Amr", "Fouad", "Male", "Radiology & Imaging",
+             "Consultant Diagnostic Radiologist", "MD, FRCR", "Imaging Suite 1", 450, 150, 17, 4.85m, 92, false,
+             "Fellow of the Royal College of Radiologists overseeing 3T MRI interpretation, cardiac CT, and rapid PACS verification.",
+             "doc-amr.jpg", "DIAGNOSTIC PACS • MANARA", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday]),
+            ("farida.radiologist@gmail.com", "Farida", "El-Khatib", "Female", "Radiology & Imaging",
+             "Consultant Musculoskeletal Radiologist", "MD, EDiR", "Imaging Suite 2", 480, 160, 11, 4.90m, 105, false,
+             "European Diploma radiologist specializing in high-resolution joint MRI, breast imaging, and vascular Doppler ultrasound.",
+             "doc-farida.jpg", "PRECISION IMAGING • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
 
             // Clinical Laboratory
-            ("lab.nadia@manara.internal", "Nadia", "Kamel", "Female", "Clinical Laboratory", "Lab Central", 250, 23000, "doc-nadia-kamel.jpg", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
-            ("dr.beck@manara.internal", "Julian", "Beck", "Male", "Clinical Laboratory", "Lab Diagnostic 2", 280, 25000, "doc-julian.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("laila.pathologist@gmail.com", "Laila", "Kamel", "Female", "Clinical Laboratory",
+             "Chief Clinical Pathologist", "MD, FRCPath", "Lab Central", 350, 100, 15, 4.83m, 76, false,
+             "Directs MANARA's two-step laboratory verification gate, hematology profiling, and molecular biomarker assurance.",
+             "doc-laila.jpg", "CLINICAL PATHOLOGY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("yasser.pathologist@gmail.com", "Yasser", "Ibrahim", "Male", "Clinical Laboratory",
+             "Consultant Clinical Biochemist", "MD, PhD", "Lab Diagnostic 2", 360, 110, 10, 4.76m, 64, false,
+             "Specializes in clinical chemistry panels, autoimmune assays, and precision metabolic diagnostics.",
+             "doc-yasser.jpg", "DIAGNOSTIC LAB • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
             // Neurology
-            ("dr.layla@manara.internal", "Layla", "Mahmoud", "Female", "Neurology", "Clinic 401", 480, 30000, "doc-layla.jpg", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
-            ("dr.rossi@manara.internal", "Mateo", "Rossi", "Male", "Neurology", "Clinic 403", 520, 33000, "doc-mateo.jpg", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("sara.neurologist@gmail.com", "Sara", "El-Gamal", "Female", "Neurology",
+             "Senior Consultant Neurologist", "MD, FEBN", "Clinic 401", 650, 220, 13, 4.93m, 151, true,
+             "European Board neurologist specializing in migraine management, epilepsy care, and neuro-vascular recovery.",
+             "doc-sara.jpg", "NEUROSCIENCE • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("mostafa.neurologist@gmail.com", "Mostafa", "Zidan", "Male", "Neurology",
+             "Consultant Neurophysiologist", "MD, PhD", "Clinic 403", 750, 250, 21, 4.87m, 112, false,
+             "Renowned authority in EEG diagnostics, nerve conduction studies, and movement disorder therapeutics.",
+             "doc-mostafa.jpg", "NEUROPHYSIOLOGY • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
 
             // Dermatology
-            ("dr.yasmine@manara.internal", "Yasmine", "Zaki", "Female", "Dermatology", "Clinic 208", 380, 25000, "doc-yasmine.jpg", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
-            ("dr.tanaka@manara.internal", "Hiroshi", "Tanaka", "Male", "Dermatology", "Clinic 210", 420, 28000, "doc-tanaka.jpg", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday])
+            ("yasmin.dermatologist@gmail.com", "Yasmin", "Zaki", "Female", "Dermatology",
+             "Consultant Clinical Dermatologist", "MD, FAAD", "Clinic 208", 500, 150, 10, 4.91m, 173, false,
+             "Fellow of the American Academy of Dermatology focused on digital dermoscopy, skin barrier restoration, and allergic skin conditions.",
+             "doc-yasmin.jpg", "DERM SANCTUARY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("khaled.dermatologist@gmail.com", "Khaled", "Hassan", "Male", "Dermatology",
+             "Consultant Dermatologic Surgeon", "MD, PhD", "Clinic 210", 550, 180, 14, 4.79m, 89, false,
+             "Specialist in precision dermatologic procedures, laser therapeutics, and restorative skin medicine.",
+             "doc-khaled.jpg", "DERM SURGERY • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday])
         };
 
         var docIndex = 1;
+        Doctor? firstCardiologist = null;
         foreach (var docDef in doctorCatalog)
         {
             var existingUser = await userManager.FindByEmailAsync(docDef.Email);
             Doctor? doc = existingUser as Doctor;
+            var dept = depts[docDef.DeptName];
+            var spec = specs[docDef.DeptName];
+
             if (doc == null && existingUser == null)
             {
-                var dept = depts[docDef.DeptName];
-                var spec = specs[docDef.DeptName];
-
                 doc = new Doctor
                 {
                     UserName = docDef.Email,
@@ -712,14 +818,24 @@ public sealed class DemoDataSeeder(
                     FirstName = docDef.First,
                     LastName = docDef.Last,
                     Gender = docDef.Gender,
-                    EmployeeNumber = $"DOC-{docIndex:00}",
-                    Salary = docDef.Salary,
+                    EmployeeNumber = $"MNR-DR-{docIndex:00}",
+                    Salary = 24000 + docIndex * 500,
                     SessionPrice = docDef.Fee,
+                    FollowUpFee = docDef.FollowUpFee,
+                    ExperienceYears = docDef.ExpYears,
+                    Rating = docDef.Rating,
+                    ReviewCount = docDef.Reviews,
+                    IsTopRated = docDef.TopRated,
+                    Credentials = docDef.Credentials,
+                    Title = docDef.Title,
+                    Bio = docDef.Bio,
+                    SealEmblem = docDef.Seal,
                     SlotMinutes = 30,
                     Specialization = spec,
                     Department = dept,
                     ClinicRoom = docDef.Room,
                     Image = docDef.Img,
+                    IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -739,16 +855,30 @@ public sealed class DemoDataSeeder(
             }
             else if (doc != null)
             {
+                doc.FirstName = docDef.First;
+                doc.LastName = docDef.Last;
+                doc.Gender = docDef.Gender;
                 doc.Image = docDef.Img;
                 doc.ClinicRoom = docDef.Room;
                 doc.SessionPrice = docDef.Fee;
-                if (doc.DepartmentId == null) doc.Department = depts[docDef.DeptName];
-                if (doc.SpecializationId == null) doc.Specialization = specs[docDef.DeptName];
+                doc.FollowUpFee = docDef.FollowUpFee;
+                doc.ExperienceYears = docDef.ExpYears;
+                doc.Rating = docDef.Rating;
+                doc.ReviewCount = docDef.Reviews;
+                doc.IsTopRated = docDef.TopRated;
+                doc.Credentials = docDef.Credentials;
+                doc.Title = docDef.Title;
+                doc.Bio = docDef.Bio;
+                doc.SealEmblem = docDef.Seal;
+                doc.IsActive = true;
+                doc.Department = dept;
+                doc.Specialization = spec;
                 await userManager.UpdateAsync(doc);
             }
 
             if (doc != null)
             {
+                firstCardiologist ??= doc;
                 foreach (var day in docDef.Days)
                 {
                     var hasSched = await dbContext.Schedules.AnyAsync(s => s.DoctorId == doc.Id && s.Day == day, cancellationToken);
@@ -769,5 +899,97 @@ public sealed class DemoDataSeeder(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        // 6. Ensure Ahmed Hassan (ahmed.patient@gmail.com) has rich completed visit + Rx + care notes for My Care / Follow-Up!
+        if (ahmedPatient != null && firstCardiologist != null)
+        {
+            var hasCompletedVisit = await dbContext.Appointments.AnyAsync(a => a.PatientID == ahmedPatient.Id && a.Status == AppointStatus.Completed, cancellationToken);
+            if (!hasCompletedVisit)
+            {
+                var pastDate = DateTime.UtcNow.Date.AddDays(-5);
+                var encNum = $"ENC-MNR-{Random.Shared.Next(100, 999)}";
+                var encounter = new Encounter
+                {
+                    Number = encNum,
+                    PatientId = ahmedPatient.Id,
+                    DoctorId = firstCardiologist.Id,
+                    DepartmentId = firstCardiologist.DepartmentId,
+                    Type = EncounterType.Outpatient,
+                    Status = EncounterStatus.Signed,
+                    ChiefComplaint = "Routine blood pressure & cardiovascular follow-up evaluation",
+                    RegisteredAtUtc = pastDate.AddHours(10),
+                    TriagedAtUtc = pastDate.AddHours(10).AddMinutes(8),
+                    StartedAtUtc = pastDate.AddHours(10).AddMinutes(15),
+                    CompletedAtUtc = pastDate.AddHours(10).AddMinutes(45),
+                    SignedAtUtc = pastDate.AddHours(11),
+                    SignedByUserId = firstCardiologist.Id
+                };
+                encounter.Diagnoses.Add(new Diagnosis
+                {
+                    Code = "I10",
+                    Description = "Essential (primary) hypertension — improving with therapy",
+                    Type = DiagnosisType.Primary,
+                    RecordedByUserId = firstCardiologist.Id,
+                    RecordedAtUtc = pastDate.AddHours(10).AddMinutes(30)
+                });
+                encounter.Notes.Add(new ClinicalNote
+                {
+                    Content = "Resting BP 124/78 mmHg. Patient tolerating therapy well with zero dizziness or peripheral edema. Advised 30-minute daily walking and reduced dietary sodium. Scheduled follow-up in 14 days.",
+                    AuthorUserId = firstCardiologist.Id,
+                    AuthorRole = Role.Doctor.ToString(),
+                    Status = NoteStatus.Signed,
+                    CreatedAtUtc = pastDate.AddHours(10).AddMinutes(35),
+                    SignedAtUtc = pastDate.AddHours(11),
+                    SignedByUserId = firstCardiologist.Id
+                });
+                dbContext.Encounters.Add(encounter);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                dbContext.Appointments.Add(new Appointment
+                {
+                    Number = $"APT-MNR-{Random.Shared.Next(100, 999)}",
+                    AppointmentDate = pastDate,
+                    SlotMinutes = 600,
+                    DurationMinutes = 30,
+                    Status = AppointStatus.Completed,
+                    PatientID = ahmedPatient.Id,
+                    DoctorID = firstCardiologist.Id,
+                    EncounterId = encounter.Id,
+                    Notes = "Completed Cardiology Consultation — Eligible for Follow-Up Fee (200 EGP)",
+                    CreatedAtUtc = pastDate.AddDays(-2),
+                    CompletedAtUtc = pastDate.AddHours(11)
+                });
+
+                var meds = await dbContext.Medications.Take(2).ToListAsync(cancellationToken);
+                if (meds.Count > 0)
+                {
+                    var rx = new Prescription
+                    {
+                        Number = $"RX-MNR-{Random.Shared.Next(100, 999)}",
+                        EncounterId = encounter.Id,
+                        PatientId = ahmedPatient.Id,
+                        PrescribedByUserId = firstCardiologist.Id,
+                        Status = PrescriptionStatus.Reviewed,
+                        DoctorInstructions = "Take medications consistently at the exact scheduled hours with food. Log home blood pressure twice weekly and bring your log to your follow-up visit.",
+                        NextFollowUpDate = DateTime.UtcNow.Date.AddDays(14),
+                        CreatedAtUtc = pastDate.AddHours(10).AddMinutes(40),
+                        Items = meds.Select((m, idx) => new PrescriptionItem
+                        {
+                            MedicationId = m.Id,
+                            Dose = idx == 0 ? "1 tablet (20 mg)" : "1 capsule (500 mg)",
+                            Frequency = idx == 0 ? "Once daily" : "Twice daily",
+                            Duration = "30 days",
+                            Route = "Oral",
+                            Quantity = idx == 0 ? 30 : 60,
+                            Instructions = idx == 0 ? "Do not skip evening dose" : "Take with full glass of water after meal",
+                            IntakeSchedule = idx == 0 ? "09:00 PM before sleep" : "08:00 AM after breakfast • 08:00 PM after dinner"
+                        }).ToList()
+                    };
+                    dbContext.Prescriptions.Add(rx);
+                }
+
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
     }
 }

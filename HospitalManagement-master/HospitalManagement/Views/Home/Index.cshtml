@@ -2,23 +2,40 @@
 @using Hospital.BLL.ModelVM
 @model MainVm
 @{
-    ViewData["Title"] = "Luxury Clinical Hospital & Enterprise Care Platform";
-    ViewData["Description"] = "MANARA — Serene, human-centered luxury clinical hospital and enterprise healthcare platform.";
+    ViewData["Title"] = "Medical Complex & Coastal Sanctuary";
+    ViewData["Description"] = "MANARA Medical Complex — Timeless classical sanctuary heritage meets diagnostic and clinical excellence.";
 }
 
-<!-- MANARA Hero Section -->
-<section class="manara-hero" style="background-image:url('@Url.Content("~/assets/manara/hero-corridor.jpg")');">
+<!-- MANARA Hero Section with Integrated Architectural Showcase Video -->
+<section class="manara-hero" id="manaraHeroSection" style="background-image:url('@Url.Content("~/assets/manara/hero-corridor.jpg")');">
+    <video id="manaraHeroVideo" class="hero-video-layer" poster="@Url.Content("~/assets/manara/hero-corridor.jpg")" playsinline preload="metadata" loop muted>
+        <source src="@Url.Content("~/videos/manara-complex.webm")" type="video/webm" />
+        <source src="@Url.Content("~/videos/manara-complex.mp4")" type="video/mp4" />
+    </video>
+
     <h1 class="serif-display hero-headline">Your Journey To<br />Wellness Begins Here</h1>
-    <button type="button" class="hero-center-play" data-book-modal="true" title="Book Appointment" aria-label="Book Appointment">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-    </button>
+
+    <div class="hero-play-wrap">
+        <button type="button" class="hero-center-play" id="heroPlayBtn" title="Watch MANARA Sanctuary Film" aria-label="Watch MANARA Sanctuary Film">
+            <partial name="_Icon" model="@("play")" />
+        </button>
+        <span class="hero-play-caption">Tour MANARA Sanctuary</span>
+    </div>
+
     <div>
+        <div class="hero-video-controls" role="group" aria-label="Showcase video controls">
+            <button type="button" class="hero-ctrl-btn" id="heroPauseToggle">Pause</button>
+            <button type="button" class="hero-ctrl-btn" id="heroMuteToggle">Unmute</button>
+            <button type="button" class="hero-ctrl-btn" id="heroCinemaBtn">Cinema View</button>
+            <button type="button" class="hero-ctrl-btn" id="heroStopBtn">Close</button>
+        </div>
+
         <p class="hero-bottom-copy">
-            From specialist consultations and PACS diagnostic imaging to signed examination reports and digital prescriptions — unified in one serene clinical platform.
+            Alexandrian sanctuary tranquility, classical architectural grace, PACS 3T diagnostics, and compassionate specialist care — unified under one roof.
         </p>
         <div class="hero-cta-row">
-            <button type="button" class="btn btn-navy" data-book-modal="true">Book Appointment</button>
-            <a class="btn btn-outline" style="background:rgba(255,255,255,0.88);text-decoration:none;" asp-controller="Account" asp-action="LogIn">Sign In to Portal</a>
+            <button type="button" class="btn btn-navy" data-book-modal="true">Book Consultation</button>
+            <a class="btn btn-outline" style="background:rgba(255,255,255,0.92);text-decoration:none;" asp-controller="Home" asp-action="Departments">Explore Departments</a>
         </div>
     </div>
 </section>
@@ -30,9 +47,9 @@
             <partial name="_ManaraLogo" model="54" />
         </div>
         <h2 class="serif-display mission-title">
-            With our extensive network of clinical departments &amp; insurance partnerships, we strive to make quality healthcare accessible to everyone.
+            A luminous lighthouse of clinical precision — blending timeless coastal heritage with calm, evidence-driven multidisciplinary care.
         </h2>
-        <a class="pill-tag" style="cursor:pointer;text-decoration:none;" asp-controller="Account" asp-action="LogIn">Explore 8 Role Portals</a>
+        <a class="pill-tag" style="cursor:pointer;text-decoration:none;" asp-controller="Home" asp-action="Doctors">Meet Our 16 Board-Certified Consultants</a>
     </div>
 </section>
 
@@ -41,29 +58,29 @@
     <div class="container">
         <div class="editorial-row">
             <div class="editorial-photo-wrap">
-                <img src="@Url.Content("~/assets/manara/doc-karim.jpg")" alt="MANARA attending physician" class="editorial-photo" />
+                <img src="@Url.Content("~/images/doctors/doc-karim.jpg")" alt="MANARA attending physician" class="editorial-photo" />
                 <div class="navy-overlap-card">
                     <div style="color:var(--teal-soft);">
                         <partial name="_ManaraLogo" model="28" />
                     </div>
-                    <div class="navy-overlap-title">A New Standard In Clinical Care</div>
-                    <div class="navy-overlap-sub">Live EMR &bull; Radiology PACS &bull; Verified Lab Gate</div>
+                    <div class="navy-overlap-title">A Sanctuary In Clinical Care</div>
+                    <div class="navy-overlap-sub">Live EMR &bull; 3T PACS &bull; Verified Lab Gate</div>
                 </div>
             </div>
             <div>
-                <span class="pill-tag">Our Services</span>
-                <h2 class="serif-display editorial-heading">We Offer Unparalleled Healthcare Excellence With Manara</h2>
+                <span class="pill-tag">Our Philosophy</span>
+                <h2 class="serif-display editorial-heading">Classical Serenity Meets Modern Medical Precision</h2>
                 <p style="color:var(--slate);font-size:13.5px;">
-                    Every department at Manara Hospital is connected to a single audited clinical record — ensuring doctors, radiologists, pharmacists, and patients work from verified clinical truth.
+                    Every pavilion at MANARA Medical Complex connects seamlessly to one audited clinical truth — uniting outpatient consultants, radiology, dual-verified laboratory diagnostics, and personalized recovery follow-up.
                 </p>
                 <div class="editorial-subgrid">
                     <div>
-                        <h4>Tailored Clinical Services</h4>
-                        <p>Conflict-checked outpatient booking, structured vitals, immutable signed reports, and instant follow-up scheduling.</p>
+                        <h4>Continuity &amp; Follow-Up</h4>
+                        <p>Every completed visit unlocks your My Care plan: itemized prescriptions with exact intake schedules, recovery progress tracking, and reduced returning follow-up rates.</p>
                     </div>
                     <div>
-                        <h4>Role-Based Hospital Suite</h4>
-                        <p>Dedicated detached workspaces for Managers, Doctors, Patients, Reception, Lab, Radiology, Pharmacy, and Billing.</p>
+                        <h4>Verified Diagnostic Safety</h4>
+                        <p>Two-step laboratory release gates and consultant radiologist sign-off ensure only verified results reach finalized patient sheets.</p>
                     </div>
                 </div>
             </div>
@@ -72,11 +89,11 @@
         <div class="editorial-row">
             <div>
                 <span class="pill-tag">Our Heritage</span>
-                <h2 class="serif-display editorial-heading">Decades Of Dedication: Our Storied Journey In Healthcare Excellence</h2>
+                <h2 class="serif-display editorial-heading">Alexandrian Coastline Elegance &amp; Timeless Trust</h2>
                 <p style="color:var(--slate);font-size:13.5px;margin-bottom:22px;">
-                    Built directly around the architecture of Manara Enterprise Care, uniting outpatient care, inpatient bed management, laboratory verification, and transparent billing under least-privilege RBAC security.
+                    Inspired by coastal limestone arcades and the enduring beacon of the Mediterranean lighthouse, MANARA pairs serene architecture with uncompromising clinical rigor.
                 </p>
-                <a class="btn btn-navy" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Access Clinical Portals</a>
+                <a class="btn btn-navy" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Explore 8 Clinical Departments</a>
             </div>
             <div class="editorial-photo-wrap right-align">
                 <img src="@Url.Content("~/assets/manara/consult-atrium.jpg")" alt="Senior physician consulting in hospital atrium" class="editorial-photo" />
@@ -93,62 +110,29 @@
 <!-- Hairline-Divided Services List -->
 <section class="services-band">
     <div class="container">
-        <span class="pill-tag">Departments &amp; Services</span>
-        <h2 class="serif-display services-heading">A Seamless Service At Your Fingertips: Book An Appointment Today For The Best Care In The Industry</h2>
+        <span class="pill-tag">Departments &amp; Centers</span>
+        <h2 class="serif-display services-heading">Eight Integrated Clinical Centers Designed Around Your Recovery</h2>
         <div>
-            <div class="service-row">
-                <div class="service-code">01 / CARDIOLOGY</div>
-                <div class="service-name">Heart &amp; Vascular Care</div>
-                <div class="service-desc">Comprehensive cardiac diagnostics including ECG, echocardiography, hypertension management, and preventive cardiology.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Cardiology">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">02 / INTERNAL MEDICINE</div>
-                <div class="service-name">Primary &amp; Chronic Care</div>
-                <div class="service-desc">Holistic adult medicine covering metabolic screening, diabetes, thyroid care, and executive health assessments.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Internal Medicine">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">03 / ORTHOPEDICS</div>
-                <div class="service-name">Joint &amp; Spine Surgery</div>
-                <div class="service-desc">Sports injury recovery, minimally invasive arthroscopy, fracture stabilization, and post-operative rehabilitation.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Orthopedics">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">04 / PEDIATRICS</div>
-                <div class="service-name">Child &amp; Adolescent Care</div>
-                <div class="service-desc">Developmental wellness checks, immunization schedules, and acute pediatric consultations in a calm clinical setting.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Pediatrics">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">05 / RADIOLOGY</div>
-                <div class="service-name">Diagnostic Imaging &amp; PACS</div>
-                <div class="service-desc">Digital X-Ray, 3T MRI, multi-slice CT, and Doppler ultrasound with consultant radiologist sign-off.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Radiology">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">06 / LABORATORY</div>
-                <div class="service-name">Clinical Pathology Lab</div>
-                <div class="service-desc">Automated hematology, lipid panels, HbA1c, renal/hepatic profiles, and strict two-step result authorization.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Laboratory">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">07 / PHARMACY</div>
-                <div class="service-name">In-House Clinical Dispensary</div>
-                <div class="service-desc">Direct clinician-to-pharmacist e-prescriptions with batch tracking, allergy screening, and refill management.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Pharmacy">Book &rarr;</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">08 / ADMISSIONS</div>
-                <div class="service-name">Inpatient Wards &amp; ICU</div>
-                <div class="service-desc">24/7 monitored critical care, private recovery suites, and single-patient active bed integrity management.</div>
-                <button type="button" class="btn btn-outline btn-sm" data-book-dept="Admissions">Book &rarr;</button>
-            </div>
+            @foreach (var dept in Model.Departments)
+            {
+                <div class="service-row">
+                    <div class="service-code">@dept.Code <div style="margin-top:4px;color:var(--teal);">@(dept.Doctors.Count) Specialists</div></div>
+                    <div class="service-name">@dept.Name</div>
+                    <div class="service-desc">
+                        @dept.Description
+                        @if (!string.IsNullOrWhiteSpace(dept.FloorLocation))
+                        {
+                            <div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">@dept.FloorLocation &bull; @dept.Capabilities</div>
+                        }
+                    </div>
+                    <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Doctors" asp-route-dept="@dept.Name" style="text-decoration:none;">View Specialists &rarr;</a>
+                </div>
+            }
         </div>
     </div>
 </section>
 
-<!-- Specialists Editorial Grid -->
+<!-- Interactive Animated Specialists Carousel with Rotating Typography Seal Badges -->
 <section class="doctors-band">
     <div class="container">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;">
@@ -156,48 +140,87 @@
                 <span class="pill-tag">Medical Faculty</span>
                 <h2 class="serif-display" style="font-size:34px;margin-top:12px;">Board-Certified Specialists</h2>
             </div>
-            <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">View Full Faculty</a>
+            <div class="doc-carousel-controls">
+                <button type="button" class="carousel-arrow-btn" id="docPrevBtn" aria-label="Previous specialists">
+                    <partial name="_Icon" model="@("chevron-left")" />
+                </button>
+                <button type="button" class="carousel-arrow-btn" id="docNextBtn" aria-label="Next specialists">
+                    <partial name="_Icon" model="@("chevron-right")" />
+                </button>
+                <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">View All 16 Doctors</a>
+            </div>
         </div>
-        <div class="doc-grid">
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-salma.jpg")" alt="Dr. Salma El-Sayed" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Cardiology</div>
-                    <div class="doc-name">Dr. Salma El-Sayed</div>
-                    <div class="doc-meta">Senior Consultant Cardiologist</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;">MD, FESC &bull; 14 Yrs &bull; 450 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Cardiology" data-book-doc="Dr. Salma El-Sayed">Book Consultation</button>
-                </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-karim.jpg")" alt="Dr. Karim Mansour" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Internal Medicine</div>
-                    <div class="doc-name">Dr. Karim Mansour</div>
-                    <div class="doc-meta">Head of Internal Medicine</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;">MD, MRCP &bull; 16 Yrs &bull; 350 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Internal Medicine" data-book-doc="Dr. Karim Mansour">Book Consultation</button>
-                </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-tarek.jpg")" alt="Dr. Tarek Nabil" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Orthopedics</div>
-                    <div class="doc-name">Dr. Tarek Nabil</div>
-                    <div class="doc-meta">Consultant Orthopedic Surgeon</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;">MD, FRCS &bull; 18 Yrs &bull; 400 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Orthopedics" data-book-doc="Dr. Tarek Nabil">Book Consultation</button>
-                </div>
-            </div>
-            <div class="doc-card">
-                <img src="@Url.Content("~/assets/manara/doc-nadia.jpg")" alt="Dr. Nadia Farouk" class="doc-img" />
-                <div class="doc-info">
-                    <div class="doc-spec">Pediatrics</div>
-                    <div class="doc-name">Dr. Nadia Farouk</div>
-                    <div class="doc-meta">Specialist Pediatrician</div>
-                    <div class="doc-meta tabular" style="margin-bottom:12px;">MSc Board Cert &bull; 9 Yrs &bull; 350 EGP</div>
-                    <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;" data-book-dept="Pediatrics" data-book-doc="Dr. Nadia Farouk">Book Consultation</button>
-                </div>
+
+        <div class="doc-carousel-viewport" id="docCarouselViewport">
+            <div class="doc-carousel-track" id="docCarouselTrack">
+                @foreach (var doc in Model.Doctors)
+                {
+                    var isFollowUp = Model.FollowUpEligibleDoctorIds.Contains(doc.Id);
+                    var circleId = $"sealPath_{doc.Id.Replace("-", "")}";
+                    var imgFile = string.IsNullOrWhiteSpace(doc.Image) ? "doc-salma.jpg" : doc.Image;
+                    var emblemIcon = (doc.DepartmentName ?? "") switch
+                    {
+                        "Cardiology" => "heart",
+                        "Neurology" => "activity",
+                        "Clinical Laboratory" => "flask",
+                        "Radiology & Imaging" => "scan",
+                        _ => "award"
+                    };
+                    <article class="doc-card @(doc.IsTopRated ? "top-rated" : "")">
+                        <div class="doc-img-wrap">
+                            <img src="@Url.Content("~/images/doctors/" + imgFile)" alt="Dr. @doc.FirstName @doc.LastName" class="doc-img" />
+
+                            @if (doc.IsTopRated)
+                            {
+                                <span class="doc-top-badge">
+                                    <partial name="_Icon" model="@("star")" />
+                                    <span>Top Rated</span>
+                                </span>
+                            }
+
+                            <!-- Rotating Editorial Guild Seal Badge -->
+                            <div class="doc-seal-badge" aria-hidden="true">
+                                <svg class="doc-seal-svg" viewBox="0 0 100 100">
+                                    <defs>
+                                        <path id="@circleId" d="M 50, 50 m -36, 0 a 36,36 0 1,1 72,0 a 36,36 0 1,1 -72,0" />
+                                    </defs>
+                                    <text class="doc-seal-text">
+                                        <textPath href="#@circleId" startOffset="0%">@(doc.SealEmblem ?? "MANARA • GUILD SEAL") &bull;</textPath>
+                                    </text>
+                                </svg>
+                                <div class="doc-seal-center">
+                                    <partial name="_Icon" model="@emblemIcon" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="doc-info">
+                            <div class="doc-spec">@(doc.DepartmentName ?? doc.SpecializationName ?? "Specialist")</div>
+                            <div class="doc-name">Dr. @doc.FirstName @doc.LastName</div>
+                            <div class="doc-meta">@doc.Title &bull; @doc.Credentials</div>
+
+                            <div class="doc-rating-row tabular">
+                                <span class="doc-star-icon"><partial name="_Icon" model="@("star")" /></span>
+                                <span>@doc.Rating.ToString("0.0")</span>
+                                <span style="color:var(--slate-light);font-weight:500;">(@doc.ReviewCount reviews) &bull; @doc.ExperienceYears yrs</span>
+                            </div>
+
+                            <div class="doc-fee-row tabular">
+                                <span class="doc-fee-main">@doc.SessionPrice.ToString("0") EGP</span>
+                                <span class="doc-followup-pill">@(isFollowUp ? "Your Follow-Up: " : "Follow-Up: ")@doc.FollowUpFee.ToString("0") EGP</span>
+                            </div>
+
+                            <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;"
+                                    data-book-dept="@(doc.DepartmentName ?? doc.SpecializationName)"
+                                    data-book-doc="Dr. @doc.FirstName @doc.LastName"
+                                    data-book-doc-id="@doc.Id"
+                                    data-book-fee="@doc.SessionPrice.ToString("0")"
+                                    data-book-followup="@doc.FollowUpFee.ToString("0")">
+                                @(isFollowUp ? $"Book Follow-Up ({doc.FollowUpFee:0} EGP)" : "Book Consultation")
+                            </button>
+                        </div>
+                    </article>
+                }
             </div>
         </div>
     </div>
@@ -207,21 +230,21 @@
 <section class="testimonials-band">
     <div class="container">
         <div class="testimonials-box">
-            <span class="pill-tag">Testimonials</span>
-            <h2 class="serif-display" style="font-size:34px;max-width:620px;margin:14px auto 0;">We Invite You To Listen To What Our Patients Have To Say About Manara</h2>
+            <span class="pill-tag">Patient Voices</span>
+            <h2 class="serif-display" style="font-size:34px;max-width:620px;margin:14px auto 0;">Trusted By Families Across Alexandria &amp; Cairo</h2>
             <div class="testimonials-grid">
                 <div>
                     <div class="quote-author">Ahmed Hassan</div>
-                    <p class="quote-text">&ldquo;Booking my cardiology follow-up, reviewing my Chest X-Ray in the portal, and downloading my signed examination report and prescription took less than two minutes.&rdquo;</p>
+                    <p class="quote-text">&ldquo;Having my cardiology follow-up schedule, exact daily medication intake hours, and recovery progress right in My Care made staying on track effortless.&rdquo;</p>
                     <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                 </div>
                 <div>
-                    <div class="quote-author">Fatima Mahmoud</div>
-                    <p class="quote-text">&ldquo;The transparency is unmatched — you can reschedule or cancel visits effortlessly, and laboratory results only appear as final once verified by the specialist.&rdquo;</p>
+                    <div class="quote-author">Nadia Mahmoud</div>
+                    <p class="quote-text">&ldquo;Walking into MANARA feels like a peaceful coastal sanctuary rather than a hospital — and every lab test is verified before release.&rdquo;</p>
                     <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                 </div>
             </div>
-            <a class="pill-tag" style="cursor:pointer;text-decoration:none;" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-PATIENT">Load Patient Portal Credentials</a>
+            <a class="btn btn-outline btn-sm" asp-controller="Patient" asp-action="AddAppointment" style="text-decoration:none;">Schedule Your Consultation</a>
         </div>
     </div>
 </section>

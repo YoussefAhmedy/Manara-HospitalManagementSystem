@@ -1,73 +1,75 @@
 @model RegisterViewModel
 @{
-    ViewData["Title"] = "Create a patient account";
-    ViewData["BodyClass"] = "auth-page";
-    ViewData["MainClass"] = "auth-main";
+    ViewData["Title"] = "Create Patient Account";
 }
 
-<section class="auth-card auth-card--wide" aria-labelledby="register-heading">
-    <span class="eyebrow">Patient access</span>
-    <h1 id="register-heading">Create your account</h1>
-    <p class="auth-card__lead">Registration creates a patient account. Email verification is required before sign-in.</p>
+<section class="auth-dark-shell">
+    <div class="auth-dark-card">
+        <div class="auth-dark-brand">
+            <div class="auth-dark-logo">
+                <partial name="_ManaraLogo" model="26" />
+                <span>MANARA</span>
+            </div>
+            <h1 class="auth-dark-title">Create your account</h1>
+            <p class="auth-dark-sub">Register as a patient to book visits, follow-ups, and access My Care</p>
+        </div>
 
-    <form asp-action="Register" asp-controller="Account" method="post">
-        <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
-        <div class="form-grid">
-            <div>
-                <label class="form-label" asp-for="FirstName"></label>
-                <input class="form-control" asp-for="FirstName" autocomplete="given-name" />
+        <form asp-action="Register" asp-controller="Account" method="post" class="form-grid">
+            <div asp-validation-summary="All" class="validation-summary-errors form-field full" role="alert" style="color:var(--danger);font-size:12px;"></div>
+
+            <div class="form-field">
+                <label class="form-label" asp-for="FirstName">First Name</label>
+                <input class="auth-dark-input" asp-for="FirstName" autocomplete="given-name" />
                 <span asp-validation-for="FirstName" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="LastName"></label>
-                <input class="form-control" asp-for="LastName" autocomplete="family-name" />
+            <div class="form-field">
+                <label class="form-label" asp-for="LastName">Last Name</label>
+                <input class="auth-dark-input" asp-for="LastName" autocomplete="family-name" />
                 <span asp-validation-for="LastName" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="Email"></label>
-                <input class="form-control" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
+            <div class="form-field full">
+                <label class="form-label" asp-for="Email">Email</label>
+                <input class="auth-dark-input" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
                 <span asp-validation-for="Email" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="PhoneNumber"></label>
-                <input class="form-control" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
+            <div class="form-field">
+                <label class="form-label" asp-for="PhoneNumber">Phone Number</label>
+                <input class="auth-dark-input" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
                 <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="DateOfBirth"></label>
-                <input class="form-control" asp-for="DateOfBirth" type="date" autocomplete="bday" />
-                <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
-            </div>
-            <div>
-                <label class="form-label" asp-for="Gender"></label>
-                <select class="form-select" asp-for="Gender">
-                    <option value="">Select an option</option>
+            <div class="form-field">
+                <label class="form-label" asp-for="Gender">Gender</label>
+                <select class="auth-dark-select" asp-for="Gender">
+                    <option value="">Select</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
                 </select>
                 <span asp-validation-for="Gender" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="Password"></label>
-                <input class="form-control" asp-for="Password" autocomplete="new-password" />
-                <span asp-validation-for="Password" class="field-validation-error"></span>
-                <p class="form-hint">Use a unique password. The deployment enforces the configured password policy.</p>
+            <div class="form-field">
+                <label class="form-label" asp-for="DateOfBirth">Date of Birth</label>
+                <input class="auth-dark-input" asp-for="DateOfBirth" type="date" autocomplete="bday" />
+                <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
             </div>
-            <div>
-                <label class="form-label" asp-for="ConfirmedPassword"></label>
-                <input class="form-control" asp-for="ConfirmedPassword" autocomplete="new-password" />
+            <div class="form-field">
+                <label class="form-label" asp-for="Password">Password</label>
+                <input class="auth-dark-input" asp-for="Password" type="password" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="field-validation-error"></span>
+            </div>
+            <div class="form-field full">
+                <label class="form-label" asp-for="ConfirmedPassword">Confirm Password</label>
+                <input class="auth-dark-input" asp-for="ConfirmedPassword" type="password" autocomplete="new-password" />
                 <span asp-validation-for="ConfirmedPassword" class="field-validation-error"></span>
             </div>
-        </div>
-        <p class="form-hint mt-3">Only enter information requested for this demonstration. Do not submit real patient records or sensitive health information.</p>
-        <div class="form-actions">
-            <button class="button button--primary" type="submit">Create patient account</button>
-            <a class="button" asp-controller="Home" asp-action="Index">Cancel</a>
-        </div>
-    </form>
 
-    <div class="auth-card__footer"><span>Already have an account? <a asp-controller="Account" asp-action="LogIn">Sign in</a></span></div>
+            <div class="form-field full" style="margin-top:6px;">
+                <button class="auth-orchid-btn" type="submit">Create Patient Account</button>
+            </div>
+            <div class="form-field full" style="text-align:center;margin-top:6px;">
+                <a asp-controller="Account" asp-action="LogIn" style="font-size:12px;color:var(--slate-light);text-decoration:none;">Already have an account? Log in</a>
+            </div>
+        </form>
+    </div>
 </section>
 
 @section Scripts {

@@ -1,63 +1,64 @@
 @using Hospital.BLL.Helpers
 @model AppointmentVm
 @{
-    ViewData["Title"] = "AddAppointment";
-
+    ViewData["Title"] = "Request Consultation";
+    ViewData["Subtitle"] = "Choose your specialist, date, and note any symptoms.";
+    var followUpDocIds = ViewBag.FollowUpDoctorIds as IReadOnlyCollection<string> ?? Array.Empty<string>();
 }
 
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Patient Booking &bull; Outpatient</span>
+        <h1 class="ws-title">Request Consultation</h1>
+    </div>
+    <a class="btn btn-sm" asp-controller="Patient" asp-action="ListAppointments">Back to My Appointments</a>
+</div>
 
-    @section Style {
-     @*    *@
-         }
+<section class="panel" style="max-width:740px;">
+    <div class="panel-head">
+        <h2 class="panel-title">Appointment Details</h2>
+        <span class="badge badge-navy">Discounted Follow-Up Rates Apply Automatically</span>
+    </div>
+    <div class="panel-body">
+        <form asp-action="AddAppointment" asp-controller="Patient" method="post" class="form-grid">
+            <div asp-validation-summary="All" class="text-danger form-field full" role="alert"></div>
 
-
-<div class="container mt-4">
-<div class="container">
-    <div class="form-section">
-        <h2>Appointment</h2>
-
-        <form asp-action="AddAppointment" asp-controller="Patient" method="post" enctype="multipart/form-data">
-            <div class="text-success" id="Success">@ViewBag.Success</div>
-            <div asp-validation-summary="All" class="text-danger"></div>
-
-            <div class="input-group">
-                <label asp-for="Notes"></label>
-                <input class="text" asp-for="Notes" placeholder="Notes" required />
-                <span asp-validation-for="Notes" class="text-danger"></span>
-            </div>
-
-            <div class="input-group">
-                <label asp-for="AppointmentDate"></label>
-                <input class="pass" asp-for="AppointmentDate" type="date" required />
-                <span asp-validation-for="AppointmentDate" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="DoctorId"></label>
-                <select asp-for="DoctorId" class="form-control">
-                    <option value="">Select Doctor</option>
+            <div class="form-field full">
+                <label class="form-label" asp-for="DoctorId">Select Specialist Physician</label>
+                <select asp-for="DoctorId" class="select" required>
+                    <option value="">Choose a MANARA specialist...</option>
                     @if (Model.Doctors != null)
-
                     {
-                        @foreach (var doc in Model.Doctors)
-
+                        foreach (var doc in Model.Doctors)
                         {
-                            <option value="@doc.Id">@doc.FirstName @doc.LastName @doc.Specialization?.Name</option>
+                            var isFollowUp = followUpDocIds.Contains(doc.Id);
+                            var feeText = isFollowUp
+                                ? $"Follow-Up: {doc.FollowUpFee:0} EGP (Reg: {doc.SessionPrice:0} EGP)"
+                                : $"{doc.SessionPrice:0} EGP (Follow-Up: {doc.FollowUpFee:0} EGP)";
+                            <option value="@doc.Id" selected="@(Model.DoctorId == doc.Id)">
+                                Dr. @doc.FirstName @doc.LastName — @(doc.Specialization?.Name ?? "Specialist") (@feeText)
+                            </option>
                         }
                     }
                 </select>
                 <span asp-validation-for="DoctorId" class="text-danger"></span>
             </div>
 
-            <br />
-            <!-- Buttons with spacing -->
-            <input class="btn btn-primary" type="submit" value="Request" style="margin-right: 10px;" />
+            <div class="form-field">
+                <label class="form-label" asp-for="AppointmentDate">Preferred Clinic Date</label>
+                <input class="input" asp-for="AppointmentDate" type="date" value="@(Model.AppointmentDate > DateTime.Today ? Model.AppointmentDate.ToString("yyyy-MM-dd") : DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required />
+                <span asp-validation-for="AppointmentDate" class="text-danger"></span>
+            </div>
 
-            <!-- Go to Home button -->
-            <a asp-action="Index" asp-controller="Home" class="btn btn-primary" style="margin-right: 10px;transform:translateY(10px)  ; width: 480px; height: 44px;">Go to Home</a>
+            <div class="form-field">
+                <label class="form-label" asp-for="Notes">Reason for Consultation / Symptoms</label>
+                <input class="input" asp-for="Notes" placeholder="Describe symptoms or follow-up reason..." required />
+                <span asp-validation-for="Notes" class="text-danger"></span>
+            </div>
 
+            <div class="form-field full" style="margin-top:8px;">
+                <button class="btn btn-primary" type="submit" style="width:100%;">Submit Appointment Request</button>
+            </div>
         </form>
     </div>
-</div>
-</div>
-
+</section>

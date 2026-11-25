@@ -5,8 +5,13 @@
     var title = ViewData["Title"] as string ?? "MANARA";
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var userName = User.FindFirst(ClaimTypes.GivenName)?.Value ?? User.Identity?.Name?.Split('@')[0] ?? "Account";
+    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "";
     var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList();
-    var primaryRole = roles.FirstOrDefault() ?? "Guest";
+    var primaryRole = roles.FirstOrDefault() ?? "Member";
+    var isPatientOnly = User.IsInRole(nameof(Role.Patient)) &&
+                        !User.IsInRole(nameof(Role.Admin)) &&
+                        !User.IsInRole(nameof(Role.HospitalAdmin)) &&
+                        !User.IsInRole(nameof(Role.Doctor));
     var initials = string.Concat(userName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
     if (string.IsNullOrEmpty(initials)) initials = "MN";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
@@ -18,15 +23,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
-    <title>@title — MANARA Hospital</title>
+    <title>@title — MANARA Medical Complex</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <!-- Public Minimal Navbar -->
+    <!-- Clean Public Top Navbar -->
     <header class="navbar" id="publicNavbar">
         <div class="container-wide navbar-inner">
             <a class="brand" asp-controller="Home" asp-action="Index" style="text-decoration:none;">
@@ -36,30 +41,82 @@
 
             <nav class="nav-center" id="navCenter" aria-label="Primary Navigation">
                 <a class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")" asp-controller="Home" asp-action="Index" style="text-decoration:none;">Home</a>
-                <a class="nav-link @(currentController == "Home" && (currentAction == "Departments" || currentAction == "Services") ? "active" : "")" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Departments</a>
+                <a class="nav-link @(currentController == "Home" && currentAction == "Departments" ? "active" : "")" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Departments</a>
                 <a class="nav-link @(currentController == "Home" && currentAction == "Doctors" ? "active" : "")" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">Doctors</a>
-                <a class="nav-link @(currentController == "Account" ? "active" : "")" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In &amp; Portals</a>
+                @if (isAuthenticated && isPatientOnly)
+                {
+                    <a class="nav-link @(currentController == "Patient" && currentAction == "MyCare" ? "active" : "")" asp-controller="Patient" asp-action="MyCare" style="text-decoration:none;">My Care &amp; Follow-Up</a>
+                }
             </nav>
 
             <div class="nav-right" id="navRight">
+                <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
+
                 @if (isAuthenticated)
                 {
-                    <a class="btn btn-teal btn-sm" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;">
-                        Open Workspace / Dashboard
-                    </a>
-                    <a class="user-chip" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;" title="Open Workspace">
-                        <span class="user-dot">@initials</span>
-                        <span>@primaryRole</span>
-                    </a>
-                    <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
-                    <form asp-controller="Account" asp-action="LogOff" method="post" style="display:inline;">
-                        <button type="submit" class="btn btn-outline btn-xs">Sign Out</button>
-                    </form>
+                    <div class="avatar-menu-wrap">
+                        <button type="button" class="avatar-trigger" id="avatarMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+                            <span class="avatar-circle">@initials</span>
+                            <span style="font-size:12px;font-weight:600;color:var(--navy);">@userName</span>
+                            <span style="width:14px;height:14px;display:inline-flex;color:var(--slate);"><partial name="_Icon" model="@("chevron-down")" /></span>
+                        </button>
+
+                        <div class="avatar-dropdown" id="avatarDropdown" role="menu">
+                            <div class="avatar-dropdown-head">
+                                <div class="avatar-dropdown-name">@userName</div>
+                                <div class="avatar-dropdown-role">@primaryRole &bull; @userEmail</div>
+                            </div>
+
+                            @if (isPatientOnly)
+                            {
+                                <a class="avatar-dropdown-item" asp-controller="Account" asp-action="Profile" role="menuitem">
+                                    <partial name="_Icon" model="@("user")" />
+                                    <span>My Profile</span>
+                                </a>
+                                <a class="avatar-dropdown-item" asp-controller="Patient" asp-action="MyCare" role="menuitem">
+                                    <partial name="_Icon" model="@("heart")" />
+                                    <span>My Appointments &amp; Follow-Ups</span>
+                                </a>
+                                <a class="avatar-dropdown-item" asp-controller="Pharmacy" asp-action="Index" role="menuitem">
+                                    <partial name="_Icon" model="@("pill")" />
+                                    <span>My Prescriptions &amp; Meds</span>
+                                </a>
+                                <a class="avatar-dropdown-item" asp-controller="Billing" asp-action="Index" role="menuitem">
+                                    <partial name="_Icon" model="@("invoice")" />
+                                    <span>My Billing &amp; Invoices</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="avatar-dropdown-item" asp-controller="Dashboard" asp-action="Index" role="menuitem">
+                                    <partial name="_Icon" model="@("dashboard")" />
+                                    <span>Open Dashboard / Workspace</span>
+                                </a>
+                                <a class="avatar-dropdown-item" asp-controller="Account" asp-action="Profile" role="menuitem">
+                                    <partial name="_Icon" model="@("user")" />
+                                    <span>My Profile</span>
+                                </a>
+                            }
+
+                            <a class="avatar-dropdown-item" asp-controller="Account" asp-action="Settings" role="menuitem">
+                                <partial name="_Icon" model="@("settings")" />
+                                <span>Settings</span>
+                            </a>
+
+                            <div class="avatar-dropdown-divider"></div>
+
+                            <form asp-controller="Account" asp-action="LogOut" method="post" style="margin:0;">
+                                <button type="submit" class="avatar-dropdown-item danger" role="menuitem">
+                                    <partial name="_Icon" model="@("logout")" />
+                                    <span>Sign Out</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 }
                 else
                 {
-                    <a class="nav-link" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In</a>
-                    <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
+                    <a class="btn btn-outline btn-sm" asp-controller="Account" asp-action="LogIn" style="text-decoration:none;">Sign In</a>
                 }
                 <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">&#9776;</button>
             </div>
@@ -99,31 +156,30 @@
         <div class="container">
             <div class="footer-top">
                 <div>
-                    <h4>Your Wellness Begins With Us</h4>
+                    <h4>A Sanctuary Of Clinical Excellence</h4>
                     <p style="font-size:12.5px;color:var(--slate-light);max-width:300px;margin-bottom:14px;">
-                        Multi-specialty hospital &amp; enterprise clinical platform. Serene, human-centered care powered by verified clinical records.
+                        MANARA Medical Complex unites Alexandrian coastal serenity, classical architectural heritage, and verified enterprise healthcare.
                     </p>
-                    <p class="tabular" style="font-size:12px;color:var(--porcelain);">24/7 Emergency: 19400 &bull; +20 2 2555 0190</p>
+                    <p class="tabular" style="font-size:12px;color:var(--porcelain);">24/7 Emergency: 19400 &bull; +20 3 555 0190</p>
                 </div>
                 <div>
-                    <div class="footer-col-title">Navigation</div>
+                    <div class="footer-col-title">Medical Complex</div>
                     <a class="footer-link" asp-controller="Home" asp-action="Index">Home</a>
                     <a class="footer-link" asp-controller="Home" asp-action="Departments">Departments</a>
-                    <a class="footer-link" asp-controller="Home" asp-action="Doctors">Specialists</a>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn">Sign In (Blank Form)</a>
+                    <a class="footer-link" asp-controller="Home" asp-action="Doctors">Medical Faculty</a>
+                    <a class="footer-link" asp-controller="Account" asp-action="LogIn">Patient &amp; Staff Sign In</a>
                 </div>
                 <div>
-                    <div class="footer-col-title">Role Sign-In (Prefills Form)</div>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-ADMIN">Hospital Manager Account</a>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-PATIENT">Patient Portal Account</a>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-DOCTOR">Attending Doctor Account</a>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-LAB">Laboratory Account</a>
-                    <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-role="ACC-RAD">Radiology Specialist Account</a>
+                    <div class="footer-col-title">Patient Services</div>
+                    <a class="footer-link" asp-controller="Patient" asp-action="AddAppointment">Book Consultation</a>
+                    <a class="footer-link" asp-controller="Patient" asp-action="MyCare">My Care &amp; Follow-Up</a>
+                    <a class="footer-link" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                    <a class="footer-link" asp-controller="Home" asp-action="Support">Patient Support</a>
                 </div>
                 <div>
-                    <div class="footer-col-title">Hospital Branches</div>
-                    <p style="font-size:12.5px;color:var(--slate-light);margin-bottom:10px;">Main Medical Center<br />Central District &bull; Outpatient &amp; ICU</p>
-                    <p style="font-size:12.5px;color:var(--slate-light);">Al-Sharqia Outpatient Clinic<br />Diagnostic Lab &amp; Clinics</p>
+                    <div class="footer-col-title">Pavilion Locations</div>
+                    <p style="font-size:12.5px;color:var(--slate-light);margin-bottom:10px;">Alexandria Coastal Sanctuary<br />Cornish Pavilion &bull; Outpatient &amp; 3T Imaging</p>
+                    <p style="font-size:12.5px;color:var(--slate-light);">Cairo Zamalek Annex<br />Specialist Clinics &amp; Clinical Pathology</p>
                 </div>
             </div>
             <div class="footer-emblem-center">

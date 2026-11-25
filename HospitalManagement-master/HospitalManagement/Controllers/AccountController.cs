@@ -569,6 +569,57 @@ public sealed class AccountController : Controller
 
     [HttpGet]
     [Authorize]
+    public async Task<IActionResult> Settings()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Challenge();
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return NotFound();
+        var roles = await _userManager.GetRolesAsync(user);
+        return View(new SettingsVm
+        {
+            Profile = _mapper.Map<EditProfileVm>(user),
+            Roles = roles.ToList()
+        });
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(SettingsVm model)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Challenge();
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(model.CurrentPassword) || string.IsNullOrWhiteSpace(model.NewPassword))
+        {
+            TempData["ErrorMessage"] = "Both current password and new password are required.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (model.NewPassword != model.ConfirmNewPassword)
+        {
+            TempData["ErrorMessage"] = "New password and confirmation do not match.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join(" ", result.Errors.Select(e => e.Description));
+            return RedirectToAction(nameof(Settings));
+        }
+
+        await _signInManager.RefreshSignInAsync(user);
+        await _auditLogger.RecordAsync("account.password-changed", user.Id, user.Id, "user", user.Id);
+        TempData["StatusMessage"] = "Password updated successfully.";
+        return RedirectToAction(nameof(Settings));
+    }
+
+    [HttpGet]
+    [Authorize]
     public async Task<IActionResult> ProfileImage()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -662,19 +713,13 @@ public sealed class AccountController : Controller
 
     private async Task<IActionResult> RedirectToRoleHomeAsync(ApplicationUser user)
     {
-        if (await _userManager.IsInRoleAsync(user, Role.Admin.ToString()))
+        if (await _userManager.IsInRoleAsync(user, Role.Patient.ToString()) &&
+            !await _userManager.IsInRoleAsync(user, Role.Admin.ToString()) &&
+            !await _userManager.IsInRoleAsync(user, Role.Doctor.ToString()))
         {
-            return RedirectToAction("Index", "Admin");
+            return RedirectToAction("MyCare", "Patient");
         }
-        if (await _userManager.IsInRoleAsync(user, Role.Doctor.ToString()))
-        {
-            return RedirectToAction("Index", "Doctor");
-        }
-        if (await _userManager.IsInRoleAsync(user, Role.Patient.ToString()))
-        {
-            return RedirectToAction("Index", "Patient");
-        }
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Index", "Dashboard");
     }
 
     private void AddIdentityErrors(IdentityResult result)

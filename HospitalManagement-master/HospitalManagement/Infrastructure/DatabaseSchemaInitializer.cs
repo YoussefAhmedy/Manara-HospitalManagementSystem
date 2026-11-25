@@ -44,9 +44,52 @@ public static class DatabaseSchemaInitializer
         }
 
         await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        if (dbContext.Database.IsSqlServer())
+        {
+            await EnsureExtendedColumnsSqlServerAsync(dbContext, cancellationToken);
+        }
         logger.LogWarning(
             "No EF Core migrations were found in this checkout; the schema was created from the model for {Environment}. " +
             "Apply the pipeline-generated idempotent script before using a persistent database.",
             environment.EnvironmentName);
+    }
+
+    private static async Task EnsureExtendedColumnsSqlServerAsync(HospitalDbContext dbContext, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            IF COL_LENGTH('dbo.Doctors', 'FollowUpFee') IS NULL ALTER TABLE dbo.Doctors ADD FollowUpFee decimal(18,2) NOT NULL CONSTRAINT DF_Doctors_FollowUpFee DEFAULT 150.00;
+            IF COL_LENGTH('dbo.Doctors', 'ExperienceYears') IS NULL ALTER TABLE dbo.Doctors ADD ExperienceYears int NOT NULL CONSTRAINT DF_Doctors_Exp DEFAULT 10;
+            IF COL_LENGTH('dbo.Doctors', 'Rating') IS NULL ALTER TABLE dbo.Doctors ADD Rating decimal(4,2) NOT NULL CONSTRAINT DF_Doctors_Rating DEFAULT 4.80;
+            IF COL_LENGTH('dbo.Doctors', 'ReviewCount') IS NULL ALTER TABLE dbo.Doctors ADD ReviewCount int NOT NULL CONSTRAINT DF_Doctors_Reviews DEFAULT 42;
+            IF COL_LENGTH('dbo.Doctors', 'IsTopRated') IS NULL ALTER TABLE dbo.Doctors ADD IsTopRated bit NOT NULL CONSTRAINT DF_Doctors_Top DEFAULT 0;
+            IF COL_LENGTH('dbo.Doctors', 'Credentials') IS NULL ALTER TABLE dbo.Doctors ADD Credentials nvarchar(120) NULL;
+            IF COL_LENGTH('dbo.Doctors', 'Title') IS NULL ALTER TABLE dbo.Doctors ADD Title nvarchar(120) NULL;
+            IF COL_LENGTH('dbo.Doctors', 'Bio') IS NULL ALTER TABLE dbo.Doctors ADD Bio nvarchar(400) NULL;
+            IF COL_LENGTH('dbo.Doctors', 'SealEmblem') IS NULL ALTER TABLE dbo.Doctors ADD SealEmblem nvarchar(80) NULL;
+
+            IF COL_LENGTH('dbo.AspNetUsers', 'RecoveryProgress') IS NULL AND OBJECT_ID('dbo.Patients', 'U') IS NULL
+                BEGIN
+                    IF COL_LENGTH('dbo.AspNetUsers', 'RecoveryProgress') IS NULL ALTER TABLE dbo.AspNetUsers ADD RecoveryProgress int NULL;
+                    IF COL_LENGTH('dbo.AspNetUsers', 'ActiveCondition') IS NULL ALTER TABLE dbo.AspNetUsers ADD ActiveCondition nvarchar(200) NULL;
+                    IF COL_LENGTH('dbo.AspNetUsers', 'DoctorCareNotes') IS NULL ALTER TABLE dbo.AspNetUsers ADD DoctorCareNotes nvarchar(1000) NULL;
+                    IF COL_LENGTH('dbo.AspNetUsers', 'NextFollowUpDate') IS NULL ALTER TABLE dbo.AspNetUsers ADD NextFollowUpDate datetime2 NULL;
+                END
+            IF OBJECT_ID('dbo.Patients', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('dbo.Patients', 'RecoveryProgress') IS NULL ALTER TABLE dbo.Patients ADD RecoveryProgress int NOT NULL CONSTRAINT DF_Patients_Recovery DEFAULT 65;
+                    IF COL_LENGTH('dbo.Patients', 'ActiveCondition') IS NULL ALTER TABLE dbo.Patients ADD ActiveCondition nvarchar(200) NULL;
+                    IF COL_LENGTH('dbo.Patients', 'DoctorCareNotes') IS NULL ALTER TABLE dbo.Patients ADD DoctorCareNotes nvarchar(1000) NULL;
+                    IF COL_LENGTH('dbo.Patients', 'NextFollowUpDate') IS NULL ALTER TABLE dbo.Patients ADD NextFollowUpDate datetime2 NULL;
+                END
+
+            IF COL_LENGTH('dbo.Prescriptions', 'DoctorInstructions') IS NULL ALTER TABLE dbo.Prescriptions ADD DoctorInstructions nvarchar(1000) NULL;
+            IF COL_LENGTH('dbo.Prescriptions', 'NextFollowUpDate') IS NULL ALTER TABLE dbo.Prescriptions ADD NextFollowUpDate datetime2 NULL;
+            IF COL_LENGTH('dbo.PrescriptionItems', 'IntakeSchedule') IS NULL ALTER TABLE dbo.PrescriptionItems ADD IntakeSchedule nvarchar(200) NULL;
+
+            IF COL_LENGTH('dbo.Departments', 'Description') IS NULL ALTER TABLE dbo.Departments ADD Description nvarchar(500) NULL;
+            IF COL_LENGTH('dbo.Departments', 'Capabilities') IS NULL ALTER TABLE dbo.Departments ADD Capabilities nvarchar(300) NULL;
+            IF COL_LENGTH('dbo.Departments', 'FloorLocation') IS NULL ALTER TABLE dbo.Departments ADD FloorLocation nvarchar(60) NULL;
+            """;
+        await dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 }

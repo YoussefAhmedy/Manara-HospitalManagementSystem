@@ -18,6 +18,7 @@ public interface IPharmacyService
     Task<Result<Prescription>> CreateAsync(
         int encounterId, IReadOnlyCollection<int> medicationIds, string actorUserId,
         string dose, string frequency, string duration, string? route,
+        string? instructions = null, string? intakeSchedule = null, DateTime? nextFollowUpDate = null,
         CancellationToken cancellationToken = default);
 
     Task<Result> ReviewAsync(int prescriptionId, bool approve, string pharmacistUserId, string? note, CancellationToken cancellationToken = default);

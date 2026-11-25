@@ -1,61 +1,71 @@
+@using Hospital.BLL.ModelVM
+@model MainVm
 @{
-    ViewData["Title"] = "Clinical Departments & Diagnostic Units";
-    ViewData["Description"] = "Explore all specialized medical and surgical departments at MANARA Hospital.";
+    ViewData["Title"] = "Clinical Departments & Specialist Units";
+    ViewData["Description"] = "Explore all 8 clinical departments at MANARA Medical Complex, diagnostic capabilities, and attending specialists.";
 }
 
-<section class="services-band" style="padding-top:48px;">
+<section class="services-band" style="padding-top:48px;padding-bottom:76px;">
     <div class="container">
-        <span class="pill-tag">Clinical Directory</span>
-        <h1 class="serif-display services-heading">All Manara Departments &amp; Diagnostic Units</h1>
-        <div>
-            <div class="service-row">
-                <div class="service-code">01 / CARDIOLOGY<div style="margin-top:4px;color:var(--teal);">450 EGP</div></div>
-                <div class="service-name">Heart &amp; Vascular Care</div>
-                <div class="service-desc">Comprehensive cardiac diagnostics including ECG, echocardiography, hypertension management, and preventive cardiology.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Floor 3</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Cardiology">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">02 / INTERNAL MEDICINE<div style="margin-top:4px;color:var(--teal);">350 EGP</div></div>
-                <div class="service-name">Primary &amp; Chronic Care</div>
-                <div class="service-desc">Holistic adult medicine covering metabolic screening, diabetes, thyroid care, and executive health assessments.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Floor 2</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Internal Medicine">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">03 / ORTHOPEDICS<div style="margin-top:4px;color:var(--teal);">400 EGP</div></div>
-                <div class="service-name">Joint &amp; Spine Surgery</div>
-                <div class="service-desc">Sports injury recovery, minimally invasive arthroscopy, fracture stabilization, and post-operative rehabilitation.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Floor 1</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Orthopedics">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">04 / PEDIATRICS<div style="margin-top:4px;color:var(--teal);">350 EGP</div></div>
-                <div class="service-name">Child &amp; Adolescent Care</div>
-                <div class="service-desc">Developmental wellness checks, immunization schedules, and acute pediatric consultations in a calm clinical setting.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Al-Sharqia Outpatient &bull; Floor 1</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Pediatrics">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">05 / RADIOLOGY<div style="margin-top:4px;color:var(--teal);">300–1,800 EGP</div></div>
-                <div class="service-name">Diagnostic Imaging &amp; PACS</div>
-                <div class="service-desc">Digital X-Ray, 3T MRI, multi-slice CT, and Doppler ultrasound with consultant radiologist sign-off.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Ground</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Radiology">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">06 / LABORATORY<div style="margin-top:4px;color:var(--teal);">150–900 EGP</div></div>
-                <div class="service-name">Clinical Pathology Lab</div>
-                <div class="service-desc">Automated hematology, lipid panels, HbA1c, renal/hepatic profiles, and strict two-step result authorization.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Ground</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Laboratory">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">07 / PHARMACY<div style="margin-top:4px;color:var(--teal);">Rx Verified</div></div>
-                <div class="service-name">In-House Clinical Dispensary</div>
-                <div class="service-desc">Direct clinician-to-pharmacist e-prescriptions with batch tracking, allergy screening, and refill management.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Lobby</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Pharmacy">Book Exam</button>
-            </div>
-            <div class="service-row">
-                <div class="service-code">08 / ADMISSIONS<div style="margin-top:4px;color:var(--teal);">Ward Schedule</div></div>
-                <div class="service-name">Inpatient Wards &amp; ICU</div>
-                <div class="service-desc">24/7 monitored critical care, private recovery suites, and single-patient active bed integrity management.<div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Main Medical Center &bull; Floors 4–6</div></div>
-                <button type="button" class="btn btn-navy btn-sm" data-book-dept="Admissions">Book Exam</button>
-            </div>
+        <span class="pill-tag">Departments-First Directory</span>
+        <h1 class="serif-display services-heading" style="margin-bottom:14px;">Our Eight Specialized Medical Departments</h1>
+        <p style="color:var(--slate);max-width:720px;margin-bottom:28px;">
+            Explore what each department treats, its advanced diagnostic capabilities, pavilion location, and the dedicated consultant specialists serving each discipline.
+        </p>
+
+        <div class="dept-showcase-grid">
+            @foreach (var dept in Model.Departments)
+            {
+                <article class="dept-card">
+                    <div class="dept-card-top">
+                        <div>
+                            <span class="service-code">@dept.Code &bull; @(dept.FloorLocation ?? "Main Pavilion")</span>
+                            <h2 class="serif-display" style="font-size:24px;margin-top:6px;">@dept.Name</h2>
+                        </div>
+                        <a class="btn btn-outline btn-xs" asp-controller="Home" asp-action="Doctors" asp-route-dept="@dept.Name" style="text-decoration:none;">Filter Doctors</a>
+                    </div>
+
+                    <p style="font-size:13px;color:var(--slate);line-height:1.6;">
+                        @(dept.Description ?? "Integrated specialist consultations, diagnostics, and coordinated continuity of care.")
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(dept.Capabilities))
+                    {
+                        <div class="dept-cap-pills">
+                            @foreach (var cap in dept.Capabilities.Split('·', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            {
+                                <span class="dept-cap-pill">@cap</span>
+                            }
+                        </div>
+                    }
+
+                    <div class="dept-doc-chips">
+                        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate-light);">
+                            Attending Specialists (@dept.Doctors.Count)
+                        </div>
+                        @foreach (var doc in dept.Doctors)
+                        {
+                            var isFollowUp = Model.FollowUpEligibleDoctorIds.Contains(doc.Id);
+                            var imgFile = string.IsNullOrWhiteSpace(doc.Image) ? "doc-salma.jpg" : doc.Image;
+                            <div class="dept-doc-chip">
+                                <img src="@Url.Content("~/images/doctors/" + imgFile)" alt="Dr. @doc.FirstName @doc.LastName" class="dept-doc-thumb" />
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-weight:700;font-size:13px;color:var(--navy);">Dr. @doc.FirstName @doc.LastName</div>
+                                    <div style="font-size:11.5px;color:var(--slate);">@doc.Title &bull; @doc.Rating.ToString("0.0") ★ &bull; @doc.SessionPrice.ToString("0") EGP</div>
+                                </div>
+                                <button type="button" class="btn btn-navy btn-xs"
+                                        data-book-dept="@dept.Name"
+                                        data-book-doc="Dr. @doc.FirstName @doc.LastName"
+                                        data-book-doc-id="@doc.Id"
+                                        data-book-fee="@doc.SessionPrice.ToString("0")"
+                                        data-book-followup="@doc.FollowUpFee.ToString("0")">
+                                    @(isFollowUp ? $"Follow-Up ({doc.FollowUpFee:0} EGP)" : "Book")
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
         </div>
     </div>
 </section>

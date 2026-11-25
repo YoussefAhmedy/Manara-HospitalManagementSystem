@@ -27,6 +27,18 @@ namespace Hospital.DAL.Entities
         [MaxLength(10)]
         public string? BloodGroup { get; set; }
 
+        /// <summary>Clinical recovery progress percentage (0-100) updated by the attending doctor.</summary>
+        [Range(0, 100)]
+        public int RecoveryProgress { get; set; } = 65;
+
+        [MaxLength(200)]
+        public string? ActiveCondition { get; set; }
+
+        [MaxLength(1000)]
+        public string? DoctorCareNotes { get; set; }
+
+        public DateTime? NextFollowUpDate { get; set; }
+
         public List<Allergy> Allergies { get; set; } = [];
         public List<Appointment>? Appointments { get; set; }
         public List<MedicalRecord>? MedicalRecords { get; set; }

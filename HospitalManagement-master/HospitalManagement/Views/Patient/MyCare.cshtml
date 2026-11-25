@@ -1,0 +1,200 @@
+@using Hospital.BLL.ModelVM
+@model PatientMyCareVm
+@{
+    ViewData["Title"] = "My Care, Prescriptions & Follow-Up";
+    var p = Model.Patient;
+    var pct = Math.Clamp(p.RecoveryProgress, 0, 100);
+    double r = 46;
+    double c = 2 * Math.PI * r;
+    double dash = (pct / 100.0) * c;
+    var dashAttr = $"{dash:F1} {c:F1}";
+    var lastVisitDoc = Model.CompletedVisits.FirstOrDefault()?.Doctor
+        ?? Model.Prescriptions.FirstOrDefault()?.Encounter?.Doctor;
+    var followUpDateDefault = (p.NextFollowUpDate ?? DateTime.Today.AddDays(14)).ToString("yyyy-MM-dd");
+}
+
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Patient Care Continuity &bull; MRN @(p.Mrn ?? "—")</span>
+        <h1 class="ws-title">My Care, Recovery &amp; Follow-Up</h1>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn btn-primary btn-sm" asp-controller="Patient" asp-action="AddAppointment">Book New Consultation</a>
+        <a class="btn btn-sm" asp-controller="Billing" asp-action="Index">My Billing &amp; Invoices</a>
+    </div>
+</div>
+
+<!-- Top Recovery Overview & Next Follow-Up Row -->
+<div class="grid-2" style="margin-bottom:18px;">
+    <section class="panel" aria-labelledby="recovery-heading">
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title" id="recovery-heading">Clinical Recovery Status</h2>
+                <div style="font-size:11.5px;color:var(--ws-text-secondary, var(--slate));margin-top:2px;">
+                    Active Condition: <strong>@(p.ActiveCondition ?? "Routine Preventive Wellness")</strong>
+                </div>
+            </div>
+            <span class="badge badge-success tabular">@pct% Recovered</span>
+        </div>
+        <div class="panel-body">
+            <div class="recovery-card" style="margin-bottom:16px;">
+                <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;">
+                    <circle cx="55" cy="55" r="46" fill="none" stroke-width="9" class="svg-stroke-track" />
+                    <circle cx="55" cy="55" r="46" fill="none" stroke-width="9" class="svg-stroke-ok"
+                            stroke-dasharray="@dashAttr" stroke-linecap="round" transform="rotate(-90 55 55)" />
+                    <text x="55" y="54" text-anchor="middle" font-size="22" font-weight="700" class="svg-fill-text">@pct%</text>
+                    <text x="55" y="70" text-anchor="middle" font-size="9" letter-spacing="0.08em" class="svg-fill-muted">PROGRESS</text>
+                </svg>
+                <div style="flex:1;">
+                    <div style="font-weight:700;font-size:13.5px;margin-bottom:6px;">Attending Doctor&rsquo;s Care Notes &amp; Instructions</div>
+                    <p style="font-size:12.5px;line-height:1.55;margin:0;color:var(--ws-text-secondary, var(--slate));">
+                        @(p.DoctorCareNotes ?? "Your clinical team has logged no additional dietary or mobility restrictions. Continue prescribed medications as scheduled.")
+                    </p>
+                </div>
+            </div>
+
+            @if (lastVisitDoc != null)
+            {
+                <div style="font-size:12px;color:var(--ws-text-secondary, var(--slate));">
+                    Attending Specialist: <strong>Dr. @lastVisitDoc.FirstName @lastVisitDoc.LastName</strong> (@(lastVisitDoc.Specialization?.Name ?? "Specialist"))
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="panel" aria-labelledby="followup-heading">
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title" id="followup-heading">One-Click Returning Follow-Up</h2>
+                <div style="font-size:11.5px;color:var(--ws-text-secondary, var(--slate));margin-top:2px;">
+                    Discounted returning-patient consultation fee applies automatically
+                </div>
+            </div>
+            @if (p.NextFollowUpDate.HasValue)
+            {
+                <span class="badge badge-navy tabular">Recommended: @p.NextFollowUpDate.Value.ToString("dd MMM yyyy")</span>
+            }
+        </div>
+        <div class="panel-body">
+            @if (lastVisitDoc != null)
+            {
+                <form asp-controller="Patient" asp-action="BookFollowUp" method="post" class="form-grid">
+                    <input type="hidden" name="doctorId" value="@lastVisitDoc.Id" />
+                    <div class="form-field full">
+                        <div class="notice notice--success">
+                            <partial name="_Icon" model="@("award")" />
+                            <div>
+                                Returning patient rate with <strong>Dr. @lastVisitDoc.FirstName @lastVisitDoc.LastName</strong>:
+                                <strong class="tabular">@lastVisitDoc.FollowUpFee.ToString("0") EGP</strong>
+                                <span style="opacity:0.75;">(Standard: @lastVisitDoc.SessionPrice.ToString("0") EGP)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fupDate">Follow-Up Date</label>
+                        <input class="input" id="fupDate" type="date" name="preferredDate" value="@followUpDateDefault" required />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fupNotes">Update / Symptoms Note</label>
+                        <input class="input" id="fupNotes" type="text" name="notes" placeholder="Optional note for Dr. @lastVisitDoc.LastName" />
+                    </div>
+                    <div class="form-field full">
+                        <button type="submit" class="btn btn-primary" style="width:100%;">
+                            Book Follow-Up Visit (@lastVisitDoc.FollowUpFee.ToString("0") EGP)
+                        </button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <p style="font-size:12.5px;margin-bottom:14px;">Once you complete your first visit with a MANARA specialist, discounted one-click follow-up booking will activate here.</p>
+                <a class="btn btn-primary btn-sm" asp-controller="Patient" asp-action="AddAppointment">Book First Consultation</a>
+            }
+        </div>
+    </section>
+</div>
+
+<!-- Issued Digital Prescriptions & Medication Schedules -->
+<section class="panel" aria-labelledby="rx-heading">
+    <div class="panel-head">
+        <div>
+            <h2 class="panel-title" id="rx-heading">Digital Prescriptions (Rx) &amp; Exact Medication Schedule</h2>
+            <div style="font-size:11.5px;color:var(--ws-text-secondary, var(--slate));margin-top:2px;">
+                Review what medications to take, exact hours of intake, and print your signed MANARA prescription sheet
+            </div>
+        </div>
+        <span class="badge badge-navy">@Model.Prescriptions.Count Issued Rx</span>
+    </div>
+
+    @if (Model.Prescriptions.Count == 0)
+    {
+        <div class="panel-body">
+            <partial name="_EmptyState" model="@(("No prescriptions yet", "Prescriptions issued during your clinical visits appear here with intake timings.", "pill"))" />
+        </div>
+    }
+    else
+    {
+        <div class="panel-body stack" style="gap:16px;">
+            @foreach (var rx in Model.Prescriptions)
+            {
+                var doc = rx.Encounter?.Doctor;
+                var badge = Hospital.BLL.Common.StatusTone.Prescription(rx.Status);
+                <div class="card" style="margin:0;">
+                    <div class="card__header">
+                        <div>
+                            <strong class="mono">@rx.Number</strong>
+                            <span style="margin-left:10px;font-size:12px;color:var(--ws-text-secondary, var(--slate));">
+                                Issued @rx.CreatedAtUtc.ToString("dd MMM yyyy")
+                                @(doc is null ? "" : $" by Dr. {doc.FirstName} {doc.LastName}")
+                            </span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <partial name="_StatusBadge" model="badge" />
+                            <a class="btn btn-sm btn-primary" asp-controller="Pharmacy" asp-action="Print" asp-route-id="@rx.Id">Print / Save PDF</a>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(rx.DoctorInstructions))
+                    {
+                        <div style="padding:12px 20px;border-bottom:1px solid var(--ws-border, var(--line));font-size:12.5px;">
+                            <strong>Clinical Guidance:</strong> @rx.DoctorInstructions
+                            @if (rx.NextFollowUpDate.HasValue)
+                            {
+                                <span class="badge badge-navy" style="margin-left:8px;">Follow-Up: @rx.NextFollowUpDate.Value.ToString("dd MMM yyyy")</span>
+                            }
+                        </div>
+                    }
+
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medication</th>
+                                    <th>Dosage &amp; Route</th>
+                                    <th>Frequency &amp; Duration</th>
+                                    <th>Exact Intake Schedule</th>
+                                    <th>Instructions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in rx.Items)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@(item.Medication?.Name ?? "Medication")</strong>
+                                            <div style="font-size:11px;color:var(--ws-text-secondary, var(--slate));">@item.Medication?.Strength @item.Medication?.Form</div>
+                                        </td>
+                                        <td>@item.Dose (@(item.Route ?? "Oral"))</td>
+                                        <td>@item.Frequency &bull; @item.Duration</td>
+                                        <td><span class="badge badge-navy">@(item.IntakeSchedule ?? "As directed by physician")</span></td>
+                                        <td>@(item.Instructions ?? "Take after food")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

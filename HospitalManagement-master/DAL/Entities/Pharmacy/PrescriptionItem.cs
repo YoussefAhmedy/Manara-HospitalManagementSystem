@@ -30,4 +30,7 @@ public class PrescriptionItem
 
     [MaxLength(300)]
     public string? Instructions { get; set; }
+
+    [MaxLength(200)]
+    public string? IntakeSchedule { get; set; }
 }

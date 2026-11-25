@@ -3,12 +3,8 @@
 @using Hospital.DAL.Entities.OwnedTypes
 @model IEnumerable<Appointment>
 @{
-    ViewData["Title"] = "GetAppointments";
-        
-    }
-        @section Style {
-         @*    *@
-             }
+    ViewData["Title"] = "Appointments Queue";
+}
 <div class="container mt-4">
 <div class="container d-flex justify-content-center">
     <div class="table-responsive" style="max-width: 1000px; margin: 0 auto;">
@@ -38,24 +34,12 @@
         <table class="table table-bordered table-hover table-striped text-center">
             <thead>
                 <tr>
-                    <th style="color : black">
-                        Patient Name
-                    </th>
-                    <th style ="color : black">
-                        Date
-                    </th >
-                    <th style ="color : black">
-                        Notes
-                    </th >
-                    <th style="color : black">
-                        Appointment Id
-                    </th>
-                    <th style="color : black">
-                        Status
-                    </th>
-                    <th style="color : black">
-                        Action
-                        </th>
+                    <th>Patient Name</th>
+                    <th>Date</th>
+                    <th>Notes</th>
+                    <th>Appointment ID</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="Insert">

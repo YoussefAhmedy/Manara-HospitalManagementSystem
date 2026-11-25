@@ -1,54 +1,51 @@
+@using Hospital.DAL.Entities.OwnedTypes
 @model CreateShiftVm
 @{
-    ViewData["Title"] = "CreateShift";
+    ViewData["Title"] = "Create Clinic Shift";
+    ViewData["Subtitle"] = "Define clinic operating hours.";
 }
 
-
-
-
-
-
-<div class="container">
-    <div class="form-section">
-        <h2>Create schedule</h2>
-
-        <form asp-action="CreateShift" asp-controller="Admin" method="post">
-            <div asp-validation-summary="All" class="text-danger"></div>
-            <div class="input-group">
-                <label asp-for="StartTime"></label>
-                <input class="pass" asp-for="StartTime"  required />
-                <span asp-validation-for="StartTime" class="text-danger"></span>
-            </div>
-            <div class="input-group">
-                <label asp-for="EndTime"></label>
-                <input class="pass" asp-for="EndTime" required />
-                <span asp-validation-for="EndTime" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="ShiftType"></label>
-                <select asp-for="ShiftType" class="form-control">
-                    <option value="">Select type</option>
-                    <option value="0">Morning</option>
-                    <option value="1">Afternoon</option>
-                    <option value="2">Night</option>
-                </select>
-                <span asp-validation-for="ShiftType" class="text-danger"></span>
-            </div>
-            
-
-            <input class="sub" type="submit" value="Create">
-
-        </form>
+<div class="ws-header">
+    <div>
+        <span class="pill-tag">Administration &bull; Shifts</span>
+        <h1 class="ws-title">Create Clinic Shift</h1>
     </div>
+    <a class="btn btn-sm" asp-controller="Admin" asp-action="Index">Back to Operations</a>
 </div>
 
+<section class="panel" style="max-width:600px;">
+    <div class="panel-head"><h2 class="panel-title">Shift Definition</h2></div>
+    <div class="panel-body">
+        <form asp-action="CreateShift" asp-controller="Admin" method="post" class="form-grid">
+            <div asp-validation-summary="All" class="text-danger form-field full"></div>
+
+            <div class="form-field full">
+                <label class="form-label" asp-for="ShiftType">Shift Period</label>
+                <select asp-for="ShiftType" class="select" required>
+                    <option value="Morning">Morning</option>
+                    <option value="Afternoon">Afternoon</option>
+                    <option value="Evening">Evening</option>
+                    <option value="Night">Night</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" asp-for="StartTime">Start Time</label>
+                <input class="input" type="time" asp-for="StartTime" required />
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" asp-for="EndTime">End Time</label>
+                <input class="input" type="time" asp-for="EndTime" required />
+            </div>
+
+            <div class="form-field full" style="margin-top:8px;">
+                <button class="btn btn-primary" type="submit" style="width:100%;">Create Shift</button>
+            </div>
+        </form>
+    </div>
+</section>
+
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }
-
-
-
-

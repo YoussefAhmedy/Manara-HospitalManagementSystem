@@ -27,30 +27,31 @@ public sealed class ManaraUiSyncTests
     {
         var root = RepositoryRoot();
         var cssPath = Path.Combine(root, "HospitalManagement", "wwwroot", "css", "manara-design-system.css");
+        var dashCssPath = Path.Combine(root, "HospitalManagement", "wwwroot", "css", "manara-dashboard.css");
         var jsPath = Path.Combine(root, "HospitalManagement", "wwwroot", "js", "manara-ui.js");
         var assetsDir = Path.Combine(root, "HospitalManagement", "wwwroot", "assets", "manara");
+        var doctorsDir = Path.Combine(root, "HospitalManagement", "wwwroot", "images", "doctors");
+        var videosDir = Path.Combine(root, "HospitalManagement", "wwwroot", "videos");
 
         Assert.IsTrue(File.Exists(cssPath), "manara-design-system.css must exist in wwwroot/css.");
+        Assert.IsTrue(File.Exists(dashCssPath), "manara-dashboard.css must exist in wwwroot/css.");
         Assert.IsTrue(File.Exists(jsPath), "manara-ui.js must exist in wwwroot/js.");
         Assert.IsTrue(Directory.Exists(assetsDir), "assets/manara must exist in wwwroot.");
+        Assert.IsTrue(Directory.Exists(doctorsDir), "images/doctors must exist in wwwroot.");
+        Assert.IsTrue(File.Exists(Path.Combine(videosDir, "manara-complex.webm")), "Hero video WebM must exist.");
+        Assert.IsTrue(File.Exists(Path.Combine(videosDir, "manara-complex.mp4")), "Hero video MP4 must exist.");
 
-        var requiredImages = new[]
-        {
-            "hero-corridor.jpg",
-            "consult-atrium.jpg",
-            "doc-salma.jpg",
-            "doc-karim.jpg",
-            "doc-tarek.jpg",
-            "doc-nadia.jpg",
-            "chest-xray-pacs.jpg",
-            "manara-logo.svg"
-        };
+        var dashCss = File.ReadAllText(dashCssPath);
+        Assert.IsTrue(dashCss.Contains("#18181A", StringComparison.OrdinalIgnoreCase), "Dashboard CSS must include #18181A Racing Green dark base.");
+        Assert.IsTrue(dashCss.Contains("#2563EB", StringComparison.OrdinalIgnoreCase), "Dashboard CSS must include #2563EB Blue Orchid primary accent.");
 
-        foreach (var file in requiredImages)
-        {
-            var filePath = Path.Combine(assetsDir, file);
-            Assert.IsTrue(File.Exists(filePath), $"Required MANARA asset {file} must exist in wwwroot/assets/manara.");
-        }
+        var portraits = Directory.GetFiles(doctorsDir, "*.jpg");
+        Assert.IsTrue(portraits.Length >= 16, "Must have at least 16 unique doctor portraits in wwwroot/images/doctors.");
+        var hashes = portraits.Select(p => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(p)))).Distinct().Count();
+        Assert.AreEqual(portraits.Length, hashes, "Every doctor portrait image must be 100% unique (zero duplicates).");
+
+        var pdfPath = Path.Combine(root, "docs", "MANARA_Demo_Accounts.pdf");
+        Assert.IsTrue(File.Exists(pdfPath), "MANARA_Demo_Accounts.pdf must exist in docs/.");
     }
 
     [TestMethod]
@@ -69,21 +70,21 @@ public sealed class ManaraUiSyncTests
     {
         var roles = new[]
         {
-            ("admin@manara.hospital", "Admin@2026", Role.Admin),
-            ("ahmed.hassan@patient.manara", "Patient@2026", Role.Patient),
-            ("dr.salma@manara.hospital", "Doctor@2026", Role.Doctor),
-            ("reception@manara.hospital", "Front@2026", Role.Receptionist),
-            ("lab@manara.hospital", "Lab@2026", Role.LabTechnician),
-            ("radiology@manara.hospital", "Rad@2026", Role.Radiologist),
-            ("pharmacy@manara.hospital", "Pharm@2026", Role.Pharmacist),
-            ("billing@manara.hospital", "Bill@2026", Role.BillingOfficer)
+            ("omar.admin@gmail.com", "Admin@2026", Role.Admin),
+            ("ahmed.patient@gmail.com", "Patient@2026", Role.Patient),
+            ("salma.cardiologist@gmail.com", "Doctor@2026", Role.Doctor),
+            ("nourhan.receptionist@gmail.com", "Recep@2026", Role.Receptionist),
+            ("hossam.labtech@gmail.com", "Lab@2026", Role.LabTechnician),
+            ("ramez.radiologist@gmail.com", "Rad@2026", Role.Radiologist),
+            ("mona.pharmacist@gmail.com", "Pharm@2026", Role.Pharmacist),
+            ("sherif.billing@gmail.com", "Bill@2026", Role.BillingOfficer)
         };
 
-        Assert.AreEqual(8, roles.Length, "Must have exactly 8 configured MANARA demo accounts.");
+        Assert.AreEqual(8, roles.Length, "Must have all 8 core MANARA demo roles.");
 
         foreach (var (email, password, role) in roles)
         {
-            Assert.IsTrue(email.Contains('@'), $"Email {email} must be valid.");
+            Assert.IsTrue(email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase), $"Email {email} must follow firstname.role@gmail.com format.");
             Assert.IsTrue(password.Length >= 6, $"Password for {email} must meet minimum length requirements.");
             Assert.IsTrue(Enum.IsDefined(typeof(Role), role), $"Role {role} must be defined.");
         }

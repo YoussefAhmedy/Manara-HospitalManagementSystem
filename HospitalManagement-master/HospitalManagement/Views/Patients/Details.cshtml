@@ -96,6 +96,51 @@
     </div>
 
     <div class="stack">
+        <section class="card" aria-labelledby="recovery-panel-heading">
+            <div class="card__header">
+                <div>
+                    <h2 class="card__title" id="recovery-panel-heading">Clinical Recovery &amp; Care Plan</h2>
+                    <p class="card__subtitle">Shared with patient inside My Care &amp; Follow-Up portal</p>
+                </div>
+                <span class="badge badge-success tabular">@Model.RecoveryProgress% Recovered</span>
+            </div>
+            <div class="card__body">
+                <div class="prog-row" style="margin-bottom:14px;">
+                    <div class="prog-meta">
+                        <span>@(Model.ActiveCondition ?? "Active Clinical Condition")</span>
+                        <strong class="tabular">@Model.RecoveryProgress%</strong>
+                    </div>
+                    <div class="prog-track">
+                        <div class="prog-fill ok" style="width:@Model.RecoveryProgress%;"></div>
+                    </div>
+                </div>
+                @if (canEdit)
+                {
+                    <form asp-action="UpdateRecovery" asp-route-id="@Model.Id" method="post" class="form-grid" style="gap:10px;">
+                        <div class="form-field">
+                            <label class="form-label" for="recPct">Recovery Progress (%)</label>
+                            <input class="input" id="recPct" type="number" name="recoveryProgress" min="0" max="100" value="@Model.RecoveryProgress" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="recFup">Next Follow-Up Date</label>
+                            <input class="input" id="recFup" type="date" name="nextFollowUpDate" value="@(Model.NextFollowUpDate?.ToString("yyyy-MM-dd") ?? "")" />
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label" for="recCond">Active Condition / Diagnosis Summary</label>
+                            <input class="input" id="recCond" type="text" name="activeCondition" value="@Model.ActiveCondition" placeholder="e.g. Post-operative recovery or Essential Hypertension" />
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label" for="recNotes">Care Instructions for Patient</label>
+                            <textarea class="textarea" id="recNotes" name="doctorCareNotes" rows="2" placeholder="Clear care guidance shown to the patient...">@Model.DoctorCareNotes</textarea>
+                        </div>
+                        <div class="form-field full">
+                            <button class="btn btn-primary btn-sm" type="submit">Update Recovery Plan</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </section>
+
         <section class="card" aria-labelledby="identity-heading">
             <div class="card__header"><h2 class="card__title" id="identity-heading">Patient record</h2></div>
             <div class="card__body">

@@ -22,7 +22,10 @@ namespace Hospital.DAL.Repository.Implementation
         }
 
         public IQueryable<Doctor> GetPublicDoctors() =>
-            _context.Doctors.AsNoTracking().Where(doctor => doctor.EmailConfirmed);
+            _context.Doctors.AsNoTracking()
+                .Include(d => d.Specialization)
+                .Include(d => d.Department)
+                .Where(doctor => doctor.EmailConfirmed && doctor.IsActive);
 
         public async Task<Doctor> GetDoctorById(string id)
         {

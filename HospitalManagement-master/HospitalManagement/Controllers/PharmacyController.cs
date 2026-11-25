@@ -90,12 +90,30 @@ public sealed class PharmacyController(
         return View(prescription);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Print(int id, CancellationToken cancellationToken)
+    {
+        var prescription = await dbContext.Prescriptions.AsNoTracking()
+            .Include(p => p.Patient)
+            .Include(p => p.Encounter).ThenInclude(e => e!.Doctor).ThenInclude(d => d!.Specialization)
+            .Include(p => p.Encounter).ThenInclude(e => e!.Diagnoses)
+            .Include(p => p.Items).ThenInclude(i => i.Medication)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        if (prescription is null) return NotFound();
+        if (User.IsInRole(nameof(Role.Patient)) && prescription.PatientId != CurrentUserId()) return NotFound();
+
+        await audit.RecordAsync("prescription.print", CurrentUserId(), prescription.PatientId, "Prescription", id.ToString(), cancellationToken);
+        ViewData["Title"] = $"Rx Sheet {prescription.Number}";
+        return View(prescription);
+    }
+
     [HttpPost]
     [Authorize(Policy = "perm:" + Permission.PrescriptionCreate)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int encounterId, int[] medicationIds, string dose, string frequency, string duration, string? route, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int encounterId, int[] medicationIds, string dose, string frequency, string duration, string? route, string? instructions, string? intakeSchedule, DateTime? nextFollowUpDate, CancellationToken cancellationToken)
     {
-        var result = await pharmacy.CreateAsync(encounterId, medicationIds, CurrentUserId(), dose, frequency, duration, route, cancellationToken);
+        var result = await pharmacy.CreateAsync(encounterId, medicationIds, CurrentUserId(), dose, frequency, duration, route, instructions, intakeSchedule, nextFollowUpDate, cancellationToken);
         if (!result.Succeeded)
         {
             TempData["ErrorMessage"] = result.Error;
@@ -103,7 +121,7 @@ public sealed class PharmacyController(
         else
         {
             await audit.RecordAsync("prescription.create", CurrentUserId(), null, "Prescription", result.Value!.Id.ToString(), cancellationToken);
-            TempData["StatusMessage"] = $"Prescription {result.Value.Number} sent to pharmacy for review.";
+            TempData["StatusMessage"] = $"Prescription {result.Value.Number} issued and sent to pharmacy.";
         }
 
         return RedirectToAction("Details", "Encounters", new { id = encounterId });

@@ -18,176 +18,159 @@
 <div class="ws-header">
     <div>
         <span class="pill-tag">Hospital Command &bull; Live Intelligence</span>
-        <h1 class="serif-display ws-title">Executive Operational Overview</h1>
+        <h1 class="ws-title">Operations Overview</h1>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a class="btn btn-navy btn-sm" asp-controller="Appointments" asp-action="Index">+ Schedule Visit</a>
-        <a class="btn btn-outline btn-sm" asp-controller="Patients" asp-action="Index">+ Register Patient</a>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-primary btn-sm" asp-controller="Appointments" asp-action="Index">+ Schedule Visit</a>
+        <a class="btn btn-sm" asp-controller="Patients" asp-action="Index">+ Register Patient</a>
     </div>
 </div>
 
-<!-- Compact Executive KPI Cards with Inline Sparklines -->
+<!-- Dark SaaS KPI Stat Cards -->
 <div class="kpi-grid">
     <div class="kpi-box">
-        <div class="kpi-top-row">
-            <span class="kpi-kicker">Appointments Flow</span>
-            <svg width="64" height="22" viewBox="0 0 64 22" fill="none"><polyline points="2,16 16,12 30,14 46,7 62,5" stroke="var(--navy)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="kpi-top-row" style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="kpi-kicker">@(kpis.ElementAtOrDefault(0)?.Label ?? "Encounters Today")</span>
+            <span class="kpi-trend blue">Live</span>
         </div>
-        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(0)?.Value ?? "24")</div>
-        <div class="kpi-sub">Conflict-checked schedule</div>
+        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(0)?.Value ?? "0")</div>
+        <div class="kpi-sub">@(kpis.ElementAtOrDefault(0)?.Hint ?? "Active outpatient flow")</div>
     </div>
 
-    <div class="kpi-box accent-teal">
-        <div class="kpi-top-row">
-            <span class="kpi-kicker">Radiology &amp; PACS</span>
-            <svg width="64" height="22" viewBox="0 0 64 22" fill="none"><polyline points="2,14 18,15 34,9 48,10 62,4" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="kpi-box">
+        <div class="kpi-top-row" style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="kpi-kicker">@(kpis.ElementAtOrDefault(1)?.Label ?? "Signed Encounters")</span>
+            <span class="kpi-trend">+100%</span>
         </div>
-        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(1)?.Value ?? "18")</div>
-        <div class="kpi-sub">Scans ready for sign-off</div>
+        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(1)?.Value ?? "0")</div>
+        <div class="kpi-sub">@(kpis.ElementAtOrDefault(1)?.Hint ?? "Completed & authorized")</div>
     </div>
 
-    <div class="kpi-box accent-warn">
-        <div class="kpi-top-row">
-            <span class="kpi-kicker">Lab Verification Gate</span>
-            <svg width="64" height="22" viewBox="0 0 64 22" fill="none"><polyline points="2,10 18,14 34,11 48,8 62,12" stroke="var(--warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="kpi-box">
+        <div class="kpi-top-row" style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="kpi-kicker">@(kpis.ElementAtOrDefault(2)?.Label ?? "Lab Verification Gate")</span>
+            <span class="kpi-trend warn">Review</span>
         </div>
-        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(2)?.Value ?? "7")</div>
-        <div class="kpi-sub">Awaiting specialist sign-off</div>
+        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(2)?.Value ?? "0")</div>
+        <div class="kpi-sub">@(kpis.ElementAtOrDefault(2)?.Hint ?? "Awaiting specialist sign-off")</div>
     </div>
 
-    <div class="kpi-box accent-ok">
-        <div class="kpi-top-row">
-            <span class="kpi-kicker">Collected Revenue</span>
-            <svg width="64" height="22" viewBox="0 0 64 22" fill="none"><polyline points="2,18 16,13 32,11 48,6 62,3" stroke="var(--success)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="kpi-box">
+        <div class="kpi-top-row" style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="kpi-kicker">Open Invoices &amp; Claims</span>
+            <span class="kpi-trend blue">EGP</span>
         </div>
-        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(3)?.Value ?? "94,800")</div>
-        <div class="kpi-sub">EGP cleared &amp; receipted</div>
+        <div class="kpi-num tabular">@(kpis.ElementAtOrDefault(5)?.Value ?? "0")</div>
+        <div class="kpi-sub">Active billing &amp; insurance queue</div>
     </div>
 </div>
 
-<!-- 3-Column Visual Panel Grid -->
+<!-- Dark Charts Row: Area Chart + Ward Donut + SLA Readiness -->
 <div class="grid-3">
-    <!-- Appointments Outcomes SVG Breakdown -->
     <div class="panel">
         <div class="panel-head">
-            <div class="panel-title">Appointments Breakdown</div>
-            <span class="badge badge-teal">Live</span>
+            <div class="panel-title">Clinical Flow &amp; Volume Trend</div>
+            <span class="badge badge-navy">Last 14 Days</span>
+        </div>
+        <div class="panel-body">
+            <div class="chart-canvas-wrap">
+                <svg class="chart-svg" viewBox="0 0 420 180" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="orchidAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="currentColor" stop-opacity="0.38" />
+                            <stop offset="100%" stop-color="currentColor" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <line x1="0" y1="45" x2="420" y2="45" stroke-width="1" class="svg-stroke-track" />
+                    <line x1="0" y1="90" x2="420" y2="90" stroke-width="1" class="svg-stroke-track" />
+                    <line x1="0" y1="135" x2="420" y2="135" stroke-width="1" class="svg-stroke-track" />
+                    <path d="M 0,145 C 55,130 90,82 145,95 C 200,108 245,42 300,54 C 350,64 385,28 420,22 L 420,175 L 0,175 Z"
+                          fill="url(#orchidAreaGrad)" style="color:var(--orchid);" />
+                    <path d="M 0,145 C 55,130 90,82 145,95 C 200,108 245,42 300,54 C 350,64 385,28 420,22"
+                          fill="none" stroke-width="2.5" class="svg-stroke-orchid" />
+                    <path d="M 0,158 C 70,152 120,126 190,132 C 250,138 310,96 420,88"
+                          fill="none" stroke-width="2" class="svg-stroke-ok" />
+                </svg>
+            </div>
+            <div style="display:flex;gap:16px;font-size:11.5px;color:var(--ws-text-secondary);margin-top:8px;">
+                <span>&#9679; Scheduled Visits</span>
+                <span>&#9679; Completed Encounters</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Ward &amp; Bed Capacity</div>
+            <span class="badge badge-navy tabular">@(occupancy?.Occupied ?? 1)/@(occupancy?.TotalBeds ?? 4)</span>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;justify-content:center;gap:12px;">
+            <svg width="132" height="132" viewBox="0 0 118 118" style="display:block;margin:0 auto;">
+                <circle cx="59" cy="59" r="42" fill="none" stroke-width="9" class="svg-stroke-track" />
+                <circle cx="59" cy="59" r="42" fill="none" stroke-width="9" class="svg-stroke-orchid" stroke-dasharray="@dashStr" stroke-linecap="round" transform="rotate(-90 59 59)" />
+                <text x="59" y="56" text-anchor="middle" font-size="22" font-weight="700" class="svg-fill-text">@occPct%</text>
+                <text x="59" y="71" text-anchor="middle" font-size="9" letter-spacing="0.06em" class="svg-fill-muted">OCCUPIED</text>
+            </svg>
+            <div style="text-align:center;font-size:12px;color:var(--ws-text-secondary);">
+                @((occupancy?.TotalBeds ?? 4) - (occupancy?.Occupied ?? 1)) inpatient beds available
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Appointments &amp; SLA</div>
         </div>
         <div class="panel-body">
             @if (outcomes?.Rows?.Count > 0)
             {
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    @foreach (var row in outcomes.Rows.Take(4))
-                    {
-                        var val = int.TryParse(row.ElementAtOrDefault(1), out var c) ? c : 0;
-                        var pct = maxOutcome > 0 ? (val * 100 / maxOutcome) : 0;
-                        <div class="prog-row">
-                            <div class="prog-meta">
-                                <span>@row[0]</span>
-                                <strong class="tabular">@val</strong>
-                            </div>
-                            <div class="prog-track">
-                                <div class="prog-fill" style="width:@Math.Min(100, Math.Max(4, pct))%;"></div>
-                            </div>
-                        </div>
-                    }
-                </div>
+                foreach (var row in outcomes.Rows.Take(3))
+                {
+                    var val = int.TryParse(row.ElementAtOrDefault(1), out var c) ? c : 0;
+                    var pct = maxOutcome > 0 ? (val * 100 / maxOutcome) : 0;
+                    <div class="prog-row">
+                        <div class="prog-meta"><span>@row[0]</span><strong class="tabular">@val</strong></div>
+                        <div class="prog-track"><div class="prog-fill" style="width:@Math.Min(100, Math.Max(6, pct))%;"></div></div>
+                    </div>
+                }
             }
-            else
-            {
-                <div style="text-align:center;padding:24px 0;color:var(--slate);">
-                    <p style="font-size:12px;">No appointment records for this period.</p>
-                </div>
-            }
-        </div>
-    </div>
-
-    <!-- Ward & Bed Occupancy Donut Chart -->
-    <div class="panel">
-        <div class="panel-head">
-            <div class="panel-title">Ward &amp; Bed Capacity</div>
-            <span class="badge badge-navy tabular">@(occupancy?.Occupied ?? 12)/@(occupancy?.TotalBeds ?? 25)</span>
-        </div>
-        <div class="panel-body" style="display:flex;flex-direction:column;justify-content:center;gap:10px;">
-            <svg width="118" height="118" viewBox="0 0 118 118" style="display:block;margin:0 auto;">
-                <circle cx="59" cy="59" r="42" fill="none" stroke="var(--porcelain)" stroke-width="9"/>
-                <circle cx="59" cy="59" r="42" fill="none" stroke="var(--teal)" stroke-width="9" stroke-dasharray="@dashStr" stroke-linecap="butt" transform="rotate(-90 59 59)"/>
-                <text x="59" y="56" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="24" font-weight="700" fill="var(--navy)">@occPct%</text>
-                <text x="59" y="71" text-anchor="middle" font-size="9.5" fill="var(--slate)" letter-spacing="0.06em">OCCUPIED</text>
-            </svg>
-            <div style="text-align:center;font-size:11.5px;color:var(--slate);">
-                @((occupancy?.TotalBeds ?? 25) - (occupancy?.Occupied ?? 12)) beds immediately available
-            </div>
-        </div>
-    </div>
-
-    <!-- Clinical SLA Readiness Progress Bars -->
-    <div class="panel">
-        <div class="panel-head">
-            <div class="panel-title">Clinical SLA Readiness</div>
-        </div>
-        <div class="panel-body">
             <div class="prog-row">
                 <div class="prog-meta"><span>Lab Verification SLA</span><strong class="tabular">94%</strong></div>
-                <div class="prog-track"><div class="prog-fill teal" style="width:94%;"></div></div>
+                <div class="prog-track"><div class="prog-fill ok" style="width:94%;"></div></div>
             </div>
             <div class="prog-row">
                 <div class="prog-meta"><span>Radiology PACS Turnaround</span><strong class="tabular">88%</strong></div>
-                <div class="prog-track"><div class="prog-fill" style="width:88%;"></div></div>
-            </div>
-            <div class="prog-row">
-                <div class="prog-meta"><span>Pharmacy Stock Health</span><strong class="tabular">79%</strong></div>
-                <div class="prog-track"><div class="prog-fill ok" style="width:79%;"></div></div>
-            </div>
-            <div class="prog-row">
-                <div class="prog-meta"><span>Signed Encounter Compliance</span><strong class="tabular">100%</strong></div>
-                <div class="prog-track"><div class="prog-fill teal" style="width:100%;"></div></div>
+                <div class="prog-track"><div class="prog-fill teal" style="width:88%;"></div></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 2-Column Split: Timeline & Audit -->
+<!-- Timeline & Audit Tables -->
 <div class="grid-2">
     <div class="panel">
         <div class="panel-head">
             <div class="panel-title">Recent Clinical Activity</div>
-            <a class="btn btn-outline btn-xs" asp-controller="Appointments" asp-action="Index">Full Schedule</a>
+            <a class="btn btn-sm" asp-controller="Appointments" asp-action="Index">Full Schedule</a>
         </div>
-        <div class="panel-body" style="padding:10px 16px;">
+        <div class="panel-body" style="padding:12px 20px;">
             @if (recent.Count > 0)
             {
-                foreach (var item in recent.Take(4))
+                foreach (var item in recent.Take(5))
                 {
-                    <div class="timeline-item">
+                    <div class="timeline-item" style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;">
                         <div class="timeline-time tabular">@item.When</div>
                         <div>
-                            <strong>@item.Title</strong>
-                            <div style="font-size:11px;color:var(--slate-light);">@item.Detail</div>
+                            <strong style="font-size:13px;">@item.Title</strong>
+                            <div style="font-size:11.5px;color:var(--ws-text-secondary);">@item.Detail</div>
                         </div>
-                        <div>
-                            <span class="badge badge-navy">Logged</span>
-                        </div>
+                        <span class="badge badge-navy">Logged</span>
                     </div>
                 }
             }
             else
             {
-                <div class="timeline-item">
-                    <div class="timeline-time tabular">10:30</div>
-                    <div><strong>Ahmed Hassan Ibrahim</strong><div style="font-size:11px;color:var(--slate-light);">Dr. Salma El-Sayed &bull; Cardiology Follow-Up</div></div>
-                    <div><span class="badge badge-navy">Confirmed</span></div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-time tabular">11:00</div>
-                    <div><strong>Fatima Mahmoud Ali</strong><div style="font-size:11px;color:var(--slate-light);">Dr. Karim Mansour &bull; Outpatient Consultation</div></div>
-                    <div><span class="badge badge-teal">Checked-In</span></div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-time tabular">12:15</div>
-                    <div><strong>Mariam Khaled Samir</strong><div style="font-size:11px;color:var(--slate-light);">Dr. Nadia Farouk &bull; Pediatric Wellness Check</div></div>
-                    <div><span class="badge badge-navy">Confirmed</span></div>
-                </div>
+                <partial name="_EmptyState" model="@(("No activity logged yet", "Recent visits and clinical actions appear here automatically.", "activity"))" />
             }
         </div>
     </div>
@@ -195,7 +178,7 @@
     <div class="panel">
         <div class="panel-head">
             <div class="panel-title">Recent Security &amp; Audit Trail</div>
-            <a class="btn btn-outline btn-xs" asp-controller="Audit" asp-action="Index">All Logs</a>
+            <a class="btn btn-sm" asp-controller="Audit" asp-action="Index">All Logs</a>
         </div>
         <div class="table-wrap">
             <table>
@@ -203,10 +186,10 @@
                     <tr><th>Time</th><th>Actor</th><th>Operation</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td class="tabular">Today 11:45</td><td>Dr. Salma El-Sayed (Doctor)</td><td><code>SIGN_ENCOUNTER</code></td></tr>
-                    <tr><td class="tabular">Today 11:10</td><td>Dr. Hisham Fouad (Radiology)</td><td><code>FINALIZE_RADIOLOGY</code></td></tr>
-                    <tr><td class="tabular">Today 10:50</td><td>Hossam Gamal (LabTech)</td><td><code>AUTHORIZE_LAB</code></td></tr>
-                    <tr><td class="tabular">Today 09:30</td><td>Youssef Ahmedy (Admin)</td><td><code>USER_SIGN_IN</code></td></tr>
+                    <tr><td class="tabular">Today 11:45</td><td>Dr. Salma El-Sayed</td><td><code>SIGN_ENCOUNTER</code></td></tr>
+                    <tr><td class="tabular">Today 11:10</td><td>Dr. Amr Fouad</td><td><code>FINALIZE_RADIOLOGY</code></td></tr>
+                    <tr><td class="tabular">Today 10:50</td><td>Hossam Gamal</td><td><code>AUTHORIZE_LAB</code></td></tr>
+                    <tr><td class="tabular">Today 09:30</td><td>Omar Ahmedy</td><td><code>USER_SIGN_IN</code></td></tr>
                 </tbody>
             </table>
         </div>

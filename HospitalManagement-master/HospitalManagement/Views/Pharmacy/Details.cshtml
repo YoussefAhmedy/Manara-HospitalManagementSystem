@@ -7,7 +7,10 @@
 }
 
 @section PageActions {
-    <partial name="_StatusBadge" model="badge" />
+    <div style="display:flex;align-items:center;gap:8px;">
+        <partial name="_StatusBadge" model="badge" />
+        <a class="btn btn-primary btn-sm" asp-controller="Pharmacy" asp-action="Print" asp-route-id="@Model.Id">Print / Save PDF</a>
+    </div>
 }
 
 <div class="split-grid">

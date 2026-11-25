@@ -177,4 +177,26 @@ public sealed class PatientsController(
         await audit.RecordAsync("encounter.create", CurrentUserId(), id, "Encounter", result.Value.Id.ToString(), cancellationToken);
         return RedirectToAction("Details", "Encounters", new { id = result.Value.Id });
     }
+
+    [HttpPost]
+    [Authorize(Policy = "perm:" + Permission.PatientEdit)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateRecovery(string id, int recoveryProgress, string? activeCondition, string? doctorCareNotes, DateTime? nextFollowUpDate, CancellationToken cancellationToken)
+    {
+        var patient = await dbContext.Patients.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        if (patient is null)
+        {
+            return NotFound();
+        }
+
+        patient.RecoveryProgress = Math.Clamp(recoveryProgress, 0, 100);
+        patient.ActiveCondition = string.IsNullOrWhiteSpace(activeCondition) ? null : activeCondition.Trim();
+        patient.DoctorCareNotes = string.IsNullOrWhiteSpace(doctorCareNotes) ? null : doctorCareNotes.Trim();
+        patient.NextFollowUpDate = nextFollowUpDate;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        await audit.RecordAsync("patient.recovery.updated", CurrentUserId(), id, "Patient", id, cancellationToken);
+        TempData["StatusMessage"] = $"Recovery plan updated ({patient.RecoveryProgress}% recovery).";
+        return RedirectToAction(nameof(Details), new { id });
+    }
 }

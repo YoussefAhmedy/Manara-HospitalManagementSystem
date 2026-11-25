@@ -28,16 +28,47 @@ model enforced on every request.
 
 1. Start the app (see *Running locally*). Demo data is seeded automatically in non-production
    environments when `Demo:Seed` is enabled.
-2. Open **`/Home/Demo`** — or click **Demo access** on the sign-in page — for the list of synthetic
-   accounts and the role each one demonstrates.
-3. Sign in as `admin` to see the operations dashboard, then as `lab`, `pharmacy`, `billing` and
-   `auditor` to see how drastically the available actions change with the role.
+2. For security hygiene, demo account credentials are **not** shown on the public website UI.
+   Use the tables below (or open the offline PDF reference [`docs/MANARA_Demo_Accounts.pdf`](docs/MANARA_Demo_Accounts.pdf))
+   to sign in at `/Account/LogIn`.
 
-The demo password is a **published constant** — `Careaxis-Demo-2026!` — and is printed to the
-application log on first seed. It is published deliberately: these accounts exist to be shared with
-evaluators, and treating the value as a secret while committing it to source would be dishonest. An
-operator may override it with `Demo:Password`. It must never be used for a real account, and demo
-seeding should be left disabled on any deployment that will hold real data.
+### Seeded Demo Accounts Directory
+
+#### Core Hospital Administration, Staff & Patients
+
+| Full Name | Role | Email | Password | Department / Scope |
+|---|---|---|---|---|
+| **Omar Ahmedy** | Hospital Manager / Admin | `omar.admin@gmail.com` | `Admin@2026` | Full hospital command, staff, schedules, RBAC & audit |
+| **Ahmed Hassan** | Patient (Returning Follow-Up) | `ahmed.patient@gmail.com` | `Patient@2026` | My Care, prescriptions, follow-ups, PACS & invoices |
+| **Nadia Mahmoud** | Patient | `nadia.patient@gmail.com` | `Patient@2026` | Patient self-service booking, medical history & records |
+| **Nourhan Adel** | Front Desk Receptionist | `nourhan.receptionist@gmail.com` | `Recep@2026` | Patient intake, conflict-checked scheduling & check-in |
+| **Hossam Gamal** | Laboratory Specialist | `hossam.labtech@gmail.com` | `Lab@2026` | Specimen tracking, 7-stage verification safety gate |
+| **Ramez Mansour** | Radiology Specialist | `ramez.radiologist@gmail.com` | `Rad@2026` | Imaging order queue, PACS viewer & report release |
+| **Mona El-Gamal** | Clinical Pharmacist | `mona.pharmacist@gmail.com` | `Pharm@2026` | Rx review, transactional batch dispensing & stock alerts |
+| **Sherif Kamel** | Billing & Insurance Officer | `sherif.billing@gmail.com` | `Bill@2026` | Invoicing, claims, payment collection & approvals |
+
+#### Attending Medical Faculty (16 Specialists across 8 Departments)
+
+| Full Name | Role | Email | Password | Department / Specialty |
+|---|---|---|---|---|
+| **Dr. Salma El-Sayed** | Doctor (Top Rated) | `salma.cardiologist@gmail.com` | `Doctor@2026` | Cardiology (600 EGP / 200 EGP Follow-Up) |
+| **Dr. Hisham El-Masry** | Doctor | `hisham.cardiologist@gmail.com` | `Doctor@2026` | Cardiology (700 EGP / 220 EGP Follow-Up) |
+| **Dr. Karim Mansour** | Doctor | `karim.internist@gmail.com` | `Doctor@2026` | Internal Medicine (450 EGP / 150 EGP Follow-Up) |
+| **Dr. Mariam Soliman** | Doctor | `mariam.internist@gmail.com` | `Doctor@2026` | Internal Medicine (500 EGP / 160 EGP Follow-Up) |
+| **Dr. Tarek Nabil** | Doctor (Top Rated) | `tarek.orthopedist@gmail.com` | `Doctor@2026` | Orthopedics (550 EGP / 180 EGP Follow-Up) |
+| **Dr. Sherif El-Shazly** | Doctor | `sherif.orthopedist@gmail.com` | `Doctor@2026` | Orthopedics (600 EGP / 200 EGP Follow-Up) |
+| **Dr. Nadia Farouk** | Doctor (Top Rated) | `nadia.pediatrician@gmail.com` | `Doctor@2026` | Pediatrics (400 EGP / 120 EGP Follow-Up) |
+| **Dr. Hana Abdelrahman** | Doctor | `hana.pediatrician@gmail.com` | `Doctor@2026` | Pediatrics (380 EGP / 120 EGP Follow-Up) |
+| **Dr. Amr Fouad** | Doctor / Radiologist | `amr.radiologist@gmail.com` | `Doctor@2026` | Radiology & Imaging (450 EGP / 150 EGP Follow-Up) |
+| **Dr. Farida El-Khatib** | Doctor | `farida.radiologist@gmail.com` | `Doctor@2026` | Radiology & Imaging (480 EGP / 160 EGP Follow-Up) |
+| **Dr. Laila Kamel** | Doctor / Pathologist | `laila.pathologist@gmail.com` | `Doctor@2026` | Clinical Laboratory (350 EGP / 100 EGP Follow-Up) |
+| **Dr. Yasser Ibrahim** | Doctor / Biochemist | `yasser.pathologist@gmail.com` | `Doctor@2026` | Clinical Laboratory (360 EGP / 110 EGP Follow-Up) |
+| **Dr. Sara El-Gamal** | Doctor (Top Rated) | `sara.neurologist@gmail.com` | `Doctor@2026` | Neurology (650 EGP / 220 EGP Follow-Up) |
+| **Dr. Mostafa Zidan** | Doctor | `mostafa.neurologist@gmail.com` | `Doctor@2026` | Neurology (750 EGP / 250 EGP Follow-Up) |
+| **Dr. Yasmin Zaki** | Doctor | `yasmin.dermatologist@gmail.com` | `Doctor@2026` | Dermatology (500 EGP / 150 EGP Follow-Up) |
+| **Dr. Khaled Hassan** | Doctor | `khaled.dermatologist@gmail.com` | `Doctor@2026` | Dermatology (550 EGP / 180 EGP Follow-Up) |
+
+> Demo seeding is intended strictly for Development/Evaluation environments (`Demo:Seed = true`). Keep it disabled in Production.
 
 ## Running locally
 
