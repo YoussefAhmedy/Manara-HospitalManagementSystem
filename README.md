@@ -1,4 +1,4 @@
-# CareAxis — hospital management platform
+# Manara — hospital management platform
 
 A role-based hospital information system built on ASP.NET Core MVC: patient records, scheduling,
 clinical encounters, laboratory, radiology, pharmacy, admissions and beds, billing with insurance,
