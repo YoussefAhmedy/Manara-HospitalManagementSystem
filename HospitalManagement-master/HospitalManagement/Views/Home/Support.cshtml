@@ -1,17 +1,82 @@
 @{
-    ViewData["Title"] = "Support";
+    ViewData["Title"] = "Patient Support & Concierge";
 }
-<section class="container legal-copy">
-    <span class="eyebrow">Help and support</span>
-    <h1>Need help with this instance?</h1>
-    <p class="lead">Support is managed by the organization operating this MANARA Hospital deployment.</p>
-    <div class="panel-card">
-        <h2>For account or workflow questions</h2>
-        <p>Contact your deployment administrator using the support channel provided by that organization. This source repository does not include a staffed support desk, monitored inbox, or service-level commitment.</p>
-        <p>If email verification or password recovery is unavailable, the operator may not have enabled SMTP delivery. Do not ask staff to send passwords or verification tokens over an unapproved channel.</p>
-    </div>
-    <div class="panel-card mt-3">
-        <h2>For urgent health concerns</h2>
-        <p>This demonstration is not monitored for urgent requests and cannot provide medical advice. Contact a qualified care provider or local emergency services.</p>
+
+<section class="manara-support-hero">
+    <div class="container">
+        <div class="manara-support-header">
+            <h1 class="serif-display manara-support-title">Patient Support &amp; Sanctuary Concierge</h1>
+            <p class="manara-support-sub">
+                Dedicated 24/7 clinical coordination across Alexandria and Cairo Zamalek — here for scheduling adjustments, diagnostic release guidance, and urgent medical routing.
+            </p>
+        </div>
+
+        <div class="manara-support-grid">
+            <article class="manara-support-card urgent">
+                <div class="manara-support-icon">
+                    <partial name="_Icon" model="@("phone")" />
+                </div>
+                <h2>24/7 Emergency &amp; Urgent Triage</h2>
+                <p>Immediate clinical emergency routing and ambulance coordination across Egypt.</p>
+                <div class="manara-support-meta tabular">
+                    <strong>19400</strong> &bull; <span>+20 3 555 0190</span>
+                </div>
+                <p class="manara-support-note">For acute cardiac, neurological, or respiratory distress, call 19400 directly or proceed to the Cornish Pavilion emergency gate.</p>
+            </article>
+
+            <article class="manara-support-card">
+                <div class="manara-support-icon">
+                    <partial name="_Icon" model="@("calendar")" />
+                </div>
+                <h2>Alexandria Coastal Sanctuary</h2>
+                <p>Cornish Pavilion &bull; Outpatient Clinics, Cardiology &amp; 3T PACS Imaging Center.</p>
+                <div class="manara-support-meta">
+                    <span>Corniche Road, Saba Pasha, Alexandria</span>
+                </div>
+                <p class="manara-support-note">Sunday – Thursday: 08:00 AM – 10:00 PM &bull; Friday – Saturday: 10:00 AM – 06:00 PM</p>
+            </article>
+
+            <article class="manara-support-card">
+                <div class="manara-support-icon">
+                    <partial name="_Icon" model="@("building")" />
+                </div>
+                <h2>Cairo Zamalek Annex</h2>
+                <p>Specialist Consulting Suites, Dual-Verified Clinical Pathology &amp; Follow-Up Lounge.</p>
+                <div class="manara-support-meta">
+                    <span>26th of July Corridor, Zamalek, Cairo</span>
+                </div>
+                <p class="manara-support-note">Direct specialist referrals and diagnostic sample courier synced daily with Alexandria.</p>
+            </article>
+        </div>
+
+        <div class="manara-support-actions-band">
+            <div class="manara-support-quick">
+                <h2>Direct Care Channels</h2>
+                <p>Reach the right clinical team directly or inspect your personal consultation timeline.</p>
+                <div class="manara-support-btn-row">
+                    <button type="button" class="btn btn-navy" data-book-modal="true">Book Consultation</button>
+                    <a class="btn btn-outline" asp-controller="Consult" asp-action="Index">Ask a Specialist &amp; Feedback</a>
+                    <a class="btn btn-outline" asp-controller="Updates" asp-action="Index">View My Updates</a>
+                </div>
+            </div>
+
+            <div class="manara-support-faq">
+                <h3>Frequently Asked Questions</h3>
+                <div class="manara-faq-list">
+                    <div class="manara-faq-item">
+                        <strong>How do returning follow-up consultation discounts apply?</strong>
+                        <span>Any patient with a completed consultation automatically qualifies for reduced follow-up pricing when re-booking with their attending physician.</span>
+                    </div>
+                    <div class="manara-faq-item">
+                        <strong>When do laboratory &amp; 3T PACS results appear in My Updates?</strong>
+                        <span>Results release immediately after dual specialist verification and consultant sign-off, appearing in real time inside your My Updates inbox.</span>
+                    </div>
+                    <div class="manara-faq-item">
+                        <strong>Need help resetting access or updating contact information?</strong>
+                        <span>Visit Account Settings to update your name, phone number, or password anytime with instant synchronization.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>

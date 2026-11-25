@@ -1,16 +1,41 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Hospital.BLL.Services.Abstraction.IEmailNotificationService NotificationSvc
 @using System.Security.Claims
 @using Hospital.BLL.Helpers
 @{
     var title = ViewData["Title"] as string ?? "MANARA";
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
-    var userName = User.FindFirst(ClaimTypes.GivenName)?.Value ?? User.Identity?.Name?.Split('@')[0] ?? "Account";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var unreadUpdates = isAuthenticated && !string.IsNullOrEmpty(currentUserId)
+        ? await NotificationSvc.GetUnreadCountAsync(currentUserId)
+        : 0;
+    var userName = User.FindFirst(ClaimTypes.GivenName)?.Value;
+    if (string.IsNullOrWhiteSpace(userName))
+    {
+        userName = User.Identity?.Name?.Split('@')[0] ?? "Account";
+    }
     var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "";
     var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList();
     var primaryRole = roles.FirstOrDefault() ?? "Member";
+    var roleDisplay = primaryRole switch
+    {
+        nameof(Role.SuperAdmin) or nameof(Role.HospitalAdmin) or nameof(Role.Admin) or nameof(Role.Management) => "Hospital Manager",
+        nameof(Role.Doctor) => "Attending Physician",
+        nameof(Role.Patient) => "Patient",
+        nameof(Role.Receptionist) => "Receptionist",
+        nameof(Role.LabTechnician) => "Lab Specialist",
+        nameof(Role.Radiologist) => "Radiologist",
+        nameof(Role.Pharmacist) => "Clinical Pharmacist",
+        nameof(Role.BillingOfficer) => "Billing Officer",
+        nameof(Role.Nurse) => "Nursing Staff",
+        nameof(Role.Auditor) => "Clinical Auditor",
+        _ => primaryRole
+    };
     var isPatientOnly = User.IsInRole(nameof(Role.Patient)) &&
                         !User.IsInRole(nameof(Role.Admin)) &&
                         !User.IsInRole(nameof(Role.HospitalAdmin)) &&
+                        !User.IsInRole(nameof(Role.SuperAdmin)) &&
+                        !User.IsInRole(nameof(Role.Management)) &&
                         !User.IsInRole(nameof(Role.Doctor));
     var initials = string.Concat(userName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
     if (string.IsNullOrEmpty(initials)) initials = "MN";
@@ -24,13 +49,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <title>@title — MANARA Medical Complex</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="alternate icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body data-auth="@(isAuthenticated ? "true" : "false")" data-role-patient="@(isPatientOnly ? "true" : "false")">
     <!-- Clean Public Top Navbar -->
     <header class="navbar" id="publicNavbar">
         <div class="container-wide navbar-inner">
@@ -43,17 +70,23 @@
                 <a class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")" asp-controller="Home" asp-action="Index" style="text-decoration:none;">Home</a>
                 <a class="nav-link @(currentController == "Home" && currentAction == "Departments" ? "active" : "")" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Departments</a>
                 <a class="nav-link @(currentController == "Home" && currentAction == "Doctors" ? "active" : "")" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">Doctors</a>
-                @if (isAuthenticated && isPatientOnly)
+                @if (isAuthenticated)
                 {
-                    <a class="nav-link @(currentController == "Patient" && currentAction == "MyCare" ? "active" : "")" asp-controller="Patient" asp-action="MyCare" style="text-decoration:none;">My Care &amp; Follow-Up</a>
+                    <a class="nav-link @(currentController == "Updates" ? "active" : "")" asp-controller="Updates" asp-action="Index" style="text-decoration:none;">
+                        <span>My Updates</span>
+                        @if (unreadUpdates > 0)
+                        {
+                            <span class="nav-updates-badge" aria-label="@unreadUpdates unread updates">@unreadUpdates</span>
+                        }
+                    </a>
                 }
+                <a class="nav-link @(currentController == "Consult" ? "active" : "")" asp-controller="Consult" asp-action="Index" style="text-decoration:none;">Consult &amp; Feedback</a>
             </nav>
 
             <div class="nav-right" id="navRight">
-                <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
-
                 @if (isAuthenticated)
                 {
+                    <button type="button" class="btn btn-navy btn-sm" id="navBookBtn" data-book-modal="true">Book Appointment</button>
                     <div class="avatar-menu-wrap">
                         <button type="button" class="avatar-trigger" id="avatarMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
                             <span class="avatar-circle">@initials</span>
@@ -64,7 +97,7 @@
                         <div class="avatar-dropdown" id="avatarDropdown" role="menu">
                             <div class="avatar-dropdown-head">
                                 <div class="avatar-dropdown-name">@userName</div>
-                                <div class="avatar-dropdown-role">@primaryRole &bull; @userEmail</div>
+                                <div class="avatar-dropdown-role">@roleDisplay &bull; @userEmail</div>
                             </div>
 
                             @if (isPatientOnly)
@@ -73,17 +106,9 @@
                                     <partial name="_Icon" model="@("user")" />
                                     <span>My Profile</span>
                                 </a>
-                                <a class="avatar-dropdown-item" asp-controller="Patient" asp-action="MyCare" role="menuitem">
-                                    <partial name="_Icon" model="@("heart")" />
-                                    <span>My Appointments &amp; Follow-Ups</span>
-                                </a>
-                                <a class="avatar-dropdown-item" asp-controller="Pharmacy" asp-action="Index" role="menuitem">
-                                    <partial name="_Icon" model="@("pill")" />
-                                    <span>My Prescriptions &amp; Meds</span>
-                                </a>
-                                <a class="avatar-dropdown-item" asp-controller="Billing" asp-action="Index" role="menuitem">
-                                    <partial name="_Icon" model="@("invoice")" />
-                                    <span>My Billing &amp; Invoices</span>
+                                <a class="avatar-dropdown-item" asp-controller="Updates" asp-action="Index" role="menuitem">
+                                    <partial name="_Icon" model="@("bell")" />
+                                    <span>My Updates</span>
                                 </a>
                             }
                             else
@@ -171,8 +196,15 @@
                 </div>
                 <div>
                     <div class="footer-col-title">Patient Services</div>
-                    <a class="footer-link" asp-controller="Patient" asp-action="AddAppointment">Book Consultation</a>
-                    <a class="footer-link" asp-controller="Patient" asp-action="MyCare">My Care &amp; Follow-Up</a>
+                    <button type="button" class="footer-link footer-link-btn" data-book-modal="true">Book Consultation</button>
+                    @if (isAuthenticated)
+                    {
+                        <a class="footer-link" asp-controller="Updates" asp-action="Index">My Care &amp; Follow-Up</a>
+                    }
+                    else
+                    {
+                        <a class="footer-link" asp-controller="Account" asp-action="LogIn" asp-route-returnUrl="/Updates">My Care &amp; Follow-Up</a>
+                    }
                     <a class="footer-link" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
                     <a class="footer-link" asp-controller="Home" asp-action="Support">Patient Support</a>
                 </div>

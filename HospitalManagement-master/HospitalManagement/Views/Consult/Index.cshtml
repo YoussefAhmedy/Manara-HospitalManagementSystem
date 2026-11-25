@@ -1,0 +1,172 @@
+@using Hospital.BLL.ModelVM
+@model ConsultHubVm
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Consult & Feedback";
+}
+
+<section class="sanctuary-page-hero">
+    <div class="container">
+        <div class="editorial-kicker">Alexandrian Sanctuary Concierge</div>
+        <h1 class="serif-display" style="font-size:38px;margin:8px 0 6px;">Ask a Specialist, Guided Triage &amp; Feedback</h1>
+        <p style="color:var(--slate);font-size:14px;max-width:680px;">
+            Submit an online clinical question for specialist routing, try our instant MANARA Medical Guidance Assistant, or rate your experience &amp; share suggestions with Hospital Management.
+        </p>
+    </div>
+</section>
+
+<section style="padding:36px 0 72px;background:var(--alabaster);">
+    <div class="container">
+        <div class="sanctuary-cards-grid">
+            <!-- Section A: Free Quick Online Consultation -->
+            <article class="sanctuary-card">
+                <div class="sanctuary-card-head">
+                    <h2 class="sanctuary-card-title">Ask a MANARA Specialist</h2>
+                    <span class="editorial-card-note">Complimentary Q&amp;A</span>
+                </div>
+                <form asp-controller="Consult" asp-action="SubmitQuestion" method="post" class="form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="inqName">Full Name *</label>
+                        <input class="input" id="inqName" name="patientName" value="@Model.PrefillName" placeholder="e.g. Nadia Mahmoud" required />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="inqEmail">Email Address *</label>
+                        <input class="input" id="inqEmail" type="email" name="patientEmail" value="@Model.PrefillEmail" placeholder="name@gmail.com" required />
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="inqDept">Medical Department</label>
+                        <select class="select" id="inqDept" name="departmentId">
+                            <option value="0">Any Appropriate Department</option>
+                            @foreach (var dept in Model.Departments)
+                            {
+                                <option value="@dept.Id" selected="@(Model.PreselectedDepartmentId == dept.Id ? "selected" : null)">@dept.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="inqSubj">Consultation Topic *</label>
+                        <input class="input" id="inqSubj" name="subject" placeholder="e.g. Morning medication timing or chest X-ray preparation" required />
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="inqBody">Your Clinical Question *</label>
+                        <textarea class="textarea" id="inqBody" name="question" rows="4" placeholder="Describe your symptoms, duration, or lab/imaging question..." required></textarea>
+                    </div>
+                    <div class="form-field full">
+                        <button type="submit" class="btn btn-navy">Submit Consultation Inquiry</button>
+                    </div>
+                </form>
+            </article>
+
+            <!-- Section B: Interactive MANARA Medical Guidance Assistant -->
+            <article class="sanctuary-card">
+                <div class="sanctuary-card-head">
+                    <h2 class="sanctuary-card-title">MANARA Medical Assistant</h2>
+                    <span class="editorial-card-note">Department Triage</span>
+                </div>
+                <div class="assistant-log" id="assistantChatLog" aria-live="polite">
+                    <div class="assistant-bubble bot">
+                        Hello! Ask me about symptoms, diagnostic test preparation (CBC, fasting lipid panels, 3T MRI, Chest X-Ray), or which MANARA department suits your visit.
+                        <div class="assistant-disclaimer">
+                            General triage &amp; department guidance only — non-medical off-topic requests are outside clinical scope.
+                        </div>
+                    </div>
+                </div>
+                <form id="medicalAssistantForm" style="display:flex;gap:10px;align-items:center;">
+                    <input class="input" id="assistantPromptInput" type="text" placeholder="Ask e.g. Which specialist treats migraines?" autocomplete="off" required style="flex:1;" />
+                    <button type="submit" class="btn btn-navy btn-sm">Ask</button>
+                </form>
+            </article>
+        </div>
+
+        <!-- Section C: Complaints, Suggestions & Star Reviews -->
+        <div class="sanctuary-cards-grid" style="margin-top:26px;">
+            <article class="sanctuary-card">
+                <div class="sanctuary-card-head">
+                    <h2 class="sanctuary-card-title">Reviews, Suggestions &amp; Concerns</h2>
+                    <span class="editorial-card-note">Direct to Management</span>
+                </div>
+                <form asp-controller="Consult" asp-action="SubmitFeedback" method="post" class="form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="fbAuthor">Your Name *</label>
+                        <input class="input" id="fbAuthor" name="authorName" value="@Model.PrefillName" placeholder="Full Name" required />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fbEmail">Email Address</label>
+                        <input class="input" id="fbEmail" type="email" name="authorEmail" value="@Model.PrefillEmail" placeholder="name@gmail.com" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fbCategory">Feedback Type</label>
+                        <select class="select" id="fbCategory" name="category">
+                            <option value="Review">Star Review</option>
+                            <option value="Suggestion">Service Suggestion</option>
+                            <option value="Complaint">Complaint / Concern</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fbScope">Regarding</label>
+                        <select class="select" id="fbScope" name="targetScope">
+                            <option value="Hospital">MANARA Medical Complex</option>
+                            <option value="Doctor">Attending Doctor</option>
+                            <option value="Department">Medical Department</option>
+                            <option value="Staff">Front Desk / Nursing Team</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fbTarget">Doctor or Wing Name</label>
+                        <input class="input" id="fbTarget" name="targetName" placeholder="e.g. Dr. Salma El-Sayed or Cardiology" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="fbRating">Rating (For Reviews)</label>
+                        <select class="select" id="fbRating" name="rating">
+                            <option value="5">5 Stars — Exceptional</option>
+                            <option value="4">4 Stars — Very Good</option>
+                            <option value="3">3 Stars — Satisfactory</option>
+                            <option value="2">2 Stars — Needs Attention</option>
+                            <option value="1">1 Star — Critical Concern</option>
+                        </select>
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="fbSubject">Summary Subject *</label>
+                        <input class="input" id="fbSubject" name="subject" placeholder="Short headline for your review or concern" required />
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="fbMsg">Details *</label>
+                        <textarea class="textarea" id="fbMsg" name="message" rows="3" placeholder="Share your experience or improvement suggestion..." required></textarea>
+                    </div>
+                    <div class="form-field full">
+                        <button type="submit" class="btn btn-navy">Submit Feedback</button>
+                    </div>
+                </form>
+            </article>
+
+            <article class="sanctuary-card">
+                <div class="sanctuary-card-head">
+                    <div>
+                        <h2 class="sanctuary-card-title">Verified Patient Impressions</h2>
+                        <div style="font-size:12px;color:var(--slate);margin-top:2px;">Average Rating: <strong>@Model.AverageRating.ToString("0.0") / 5.0</strong> (@Model.TotalReviewsCount verified entries)</div>
+                    </div>
+                    <span class="editorial-card-note">Alexandria</span>
+                </div>
+                @if (Model.PublishedReviews.Count == 0)
+                {
+                    <p style="color:var(--slate);font-size:13px;">Be the first to share a verified impression of MANARA Medical Complex.</p>
+                }
+                else
+                {
+                    @foreach (var rev in Model.PublishedReviews)
+                    {
+                        var stars = rev.Rating ?? 5;
+                        <div class="updates-item">
+                            <div class="updates-meta">
+                                <strong>@rev.AuthorName &bull; @(rev.TargetName ?? rev.TargetScope)</strong>
+                                <span class="rating-stars">@(new string('★', stars))@(new string('☆', Math.Max(0, 5 - stars)))</span>
+                            </div>
+                            <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:3px;">@rev.Subject</div>
+                            <p style="font-size:12.5px;color:var(--slate);margin:0;">@rev.Message</p>
+                        </div>
+                    }
+                }
+            </article>
+        </div>
+    </div>
+</section>

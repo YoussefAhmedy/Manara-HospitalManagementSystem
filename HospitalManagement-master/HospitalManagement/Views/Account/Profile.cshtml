@@ -1,83 +1,147 @@
+@using Hospital.BLL.Helpers
 @model EditProfileVm
 @{
-    ViewData["Title"] = "Your account";
+    bool useWs = ViewBag.UseWorkspaceLayout as bool? == true;
+    Layout = useWs ? "_WorkspaceLayout" : "_Layout";
+    ViewData["Title"] = "Account Profile";
+    ViewData["Subtitle"] = "Maintain your personal identity, verified email, and profile portrait.";
+    var ctxParam = useWs ? "ws" : null;
+    bool isPatientOnly = User.IsInRole(nameof(Role.Patient)) &&
+                         !User.IsInRole(nameof(Role.Admin)) &&
+                         !User.IsInRole(nameof(Role.HospitalAdmin)) &&
+                         !User.IsInRole(nameof(Role.SuperAdmin)) &&
+                         !User.IsInRole(nameof(Role.Management)) &&
+                         !User.IsInRole(nameof(Role.Doctor));
+    var dobValue = Model.DateOfBirth.HasValue && Model.DateOfBirth.Value.Year > 1900
+        ? Model.DateOfBirth.Value.ToString("yyyy-MM-dd")
+        : string.Empty;
 }
 
-<section class="container page-header">
-    <div class="page-header__eyebrow">Account settings</div>
-    <h1>Your profile</h1>
-    <p>Update your account details. A requested email change takes effect only after verification.</p>
-</section>
+@if (!useWs)
+{
+    @:<section class="manara-settings-light"><div class="container">
+}
 
-<div class="container profile-layout">
-    <aside class="profile-summary">
-        <img class="avatar-large" src="@Url.Action("ProfileImage", "Account")" alt="Profile image for @Model.FirstName @Model.LastName" />
-        <h2>@Model.FirstName @Model.LastName</h2>
-        <p>Signed-in account</p>
-        <p class="form-hint mt-3">Your profile image is stored outside the public web directory and served to your signed-in account.</p>
+<div class="ws-header manara-settings-head">
+    <div>
+        <h1 class="ws-title">Your Profile</h1>
+    </div>
+    <div class="action-row">
+        <a class="btn btn-sm" asp-controller="Account" asp-action="Settings" asp-route-ctx="@ctxParam">Preferences &amp; Security</a>
+        @if (isPatientOnly)
+        {
+            <a class="btn-outline" asp-controller="Updates" asp-action="Index">My Updates</a>
+        }
+        else if (!useWs)
+        {
+            <a class="btn-primary" asp-controller="Dashboard" asp-action="Index">Open Workspace</a>
+        }
+    </div>
+</div>
+
+<div class="profile-layout">
+    <aside class="profile-summary panel">
+        <div class="panel-body stack">
+            <img class="avatar-large" src="@Url.Action("ProfileImage", "Account")" alt="Profile image for @Model.FirstName @Model.LastName" />
+            <h2 style="margin:6px 0 2px;">@Model.FirstName @Model.LastName</h2>
+            <p class="settings-identity-email" style="margin:0;">@Model.Email</p>
+            <p class="form-hint mt-3" style="margin:0;">Your portrait is stored securely outside the public root and synced across MANARA navigation immediately on save.</p>
+        </div>
     </aside>
 
-    <section class="panel-card" aria-labelledby="profile-form-heading">
-        <div class="panel-card__heading">
-            <div><h2 id="profile-form-heading">Personal details</h2><p>Only change information you are authorized to maintain.</p></div>
+    <section class="panel" aria-labelledby="profile-form-heading">
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title" id="profile-form-heading">Personal Details</h2>
+                <p style="font-size:12.5px;margin:2px 0 0;opacity:0.78;">Edit any field below and save directly—optional fields never block partial updates.</p>
+            </div>
         </div>
-        @if (TempData["StatusMessage"] is string statusMessage)
-        {
-            <div class="status-message" role="status">@statusMessage</div>
-        }
-        <form asp-action="EditProfile" asp-controller="Account" method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
-            <div class="form-grid">
-                <div>
-                    <label class="form-label" asp-for="FirstName"></label>
-                    <input class="form-control" asp-for="FirstName" autocomplete="given-name" />
-                    <span asp-validation-for="FirstName" class="field-validation-error"></span>
+
+        <div class="panel-body">
+            @if (TempData["StatusMessage"] is string statusMessage)
+            {
+                <div class="status-message" role="status">@statusMessage</div>
+            }
+
+            <form asp-action="EditProfile" asp-controller="Account" asp-route-ctx="@ctxParam" method="post" enctype="multipart/form-data">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
+                }
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label class="form-label" asp-for="FirstName"></label>
+                        <input class="input" asp-for="FirstName" autocomplete="given-name" />
+                        <span asp-validation-for="FirstName" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="LastName"></label>
+                        <input class="input" asp-for="LastName" autocomplete="family-name" />
+                        <span asp-validation-for="LastName" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="Email"></label>
+                        <input class="input" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
+                        <span asp-validation-for="Email" class="field-validation-error"></span>
+                        <p class="form-hint">A verification notice is dispatched if email changes.</p>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="PhoneNumber"></label>
+                        <input class="input" asp-for="PhoneNumber" type="tel" autocomplete="tel" placeholder="+20 100 555 0100 (optional)" />
+                        <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="profileDobInput">Date of Birth</label>
+                        <div class="auth-date-row">
+                            <input class="input" id="profileDobInput" name="DateOfBirth" type="date" value="@dobValue" autocomplete="bday" placeholder="dd/mm/yyyy" />
+                            <button type="button" class="auth-date-clear" data-clear-date="profileDobInput" title="Clear date of birth">&times; Clear</button>
+                        </div>
+                        <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="Gender"></label>
+                        <select class="select" asp-for="Gender">
+                            <option value="">Select gender (optional)</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" for="imageFile">Profile Portrait</label>
+                        <div class="manara-file-upload" data-file-upload="true">
+                            <input class="manara-file-input-hidden" type="file" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                            <label class="manara-file-trigger" for="imageFile">
+                                <span class="manara-file-btn">Choose Photo</span>
+                                <span class="manara-file-name" id="profileImageFileName">PNG, JPG, or WebP (max 5 MB)</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label" asp-for="LastName"></label>
-                    <input class="form-control" asp-for="LastName" autocomplete="family-name" />
-                    <span asp-validation-for="LastName" class="field-validation-error"></span>
+
+                <div class="settings-actions" style="gap:10px;">
+                    @if (useWs && !isPatientOnly)
+                    {
+                        <a class="btn btn-sm" asp-controller="Dashboard" asp-action="Index">Back to Dashboard</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Index">Return Home</a>
+                    }
+                    <button class="btn btn-primary" type="submit">Save Profile</button>
                 </div>
-                <div>
-                    <label class="form-label" asp-for="Email"></label>
-                    <input class="form-control" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
-                    <span asp-validation-for="Email" class="field-validation-error"></span>
-                    <p class="form-hint">A confirmation link is sent to the new address when delivery is configured.</p>
-                </div>
-                <div>
-                    <label class="form-label" asp-for="PhoneNumber"></label>
-                    <input class="form-control" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
-                    <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
-                </div>
-                <div>
-                    <label class="form-label" asp-for="DateOfBirth"></label>
-                    <input class="form-control" asp-for="DateOfBirth" type="date" autocomplete="bday" />
-                    <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
-                </div>
-                <div>
-                    <label class="form-label" asp-for="Gender"></label>
-                    <select class="form-select" asp-for="Gender">
-                        <option value="">Select an option</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                    <span asp-validation-for="Gender" class="field-validation-error"></span>
-                </div>
-                <div class="form-grid__full">
-                    <label class="form-label" for="imageFile">Profile image</label>
-                    <input class="form-control" type="file" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
-                    <p class="form-hint">JPG, PNG, or WebP, up to 5 MB. The server checks the file signature and type.</p>
-                </div>
-            </div>
-            <div class="form-actions">
-                <button class="button button--primary" type="submit">Save profile</button>
-                <a class="button" asp-controller="Home" asp-action="Index">Cancel</a>
-            </div>
-        </form>
+            </form>
+        </div>
     </section>
 </div>
+
+@if (!useWs)
+{
+    @:</div></section>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

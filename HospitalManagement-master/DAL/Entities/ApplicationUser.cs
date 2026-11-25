@@ -29,5 +29,18 @@ namespace Hospital.DAL.Entities
 
         public string? Image { get; set; }
 
+        // Notification & accessibility preferences
+        public bool EmailNotifyLabs { get; set; } = true;
+        public bool EmailNotifyPrescriptions { get; set; } = true;
+        public bool EmailNotifyAppointments { get; set; } = true;
+        public bool EmailNotifyReplies { get; set; } = true;
+
+        [MaxLength(16)]
+        public string UiFontSize { get; set; } = "default";
+
+        [MaxLength(16)]
+        public string UiDensity { get; set; } = "comfortable";
+
+        public bool UiReducedMotion { get; set; }
     }
 }

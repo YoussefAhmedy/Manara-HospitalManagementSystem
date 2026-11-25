@@ -70,8 +70,8 @@ public sealed class ManaraUiSyncTests
     {
         var roles = new[]
         {
-            ("omar.admin@gmail.com", "Admin@2026", Role.Admin),
-            ("ahmed.patient@gmail.com", "Patient@2026", Role.Patient),
+            ("youssef.manager@gmail.com", "Manager@2026", Role.Admin),
+            ("nadia.patient@gmail.com", "Patient@2026", Role.Patient),
             ("salma.cardiologist@gmail.com", "Doctor@2026", Role.Doctor),
             ("nourhan.receptionist@gmail.com", "Recep@2026", Role.Receptionist),
             ("hossam.labtech@gmail.com", "Lab@2026", Role.LabTechnician),

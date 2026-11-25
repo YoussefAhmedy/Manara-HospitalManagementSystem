@@ -1,31 +1,52 @@
 @using Hospital.BLL.Helpers
 @model AppointmentVm
 @{
-    ViewData["Title"] = "Request Consultation";
-    ViewData["Subtitle"] = "Choose your specialist, date, and note any symptoms.";
+    ViewData["Title"] = "Book Consultation";
+    ViewData["Subtitle"] = "Step 1: Choose department · Step 2: Pick specialist · Step 3: Select clinic date.";
     var followUpDocIds = ViewBag.FollowUpDoctorIds as IReadOnlyCollection<string> ?? Array.Empty<string>();
 }
 
 <div class="ws-header">
     <div>
-        <span class="pill-tag">Patient Booking &bull; Outpatient</span>
+        <div class="editorial-kicker">Patient Booking &bull; Outpatient</div>
         <h1 class="ws-title">Request Consultation</h1>
     </div>
     <a class="btn btn-sm" asp-controller="Patient" asp-action="ListAppointments">Back to My Appointments</a>
 </div>
 
-<section class="panel" style="max-width:740px;">
+<section class="panel" style="max-width:960px;">
     <div class="panel-head">
-        <h2 class="panel-title">Appointment Details</h2>
-        <span class="badge badge-navy">Discounted Follow-Up Rates Apply Automatically</span>
+        <h2 class="panel-title">Guided Department &amp; Specialist Booking</h2>
+        <span class="badge badge-navy">Returning Follow-Up Rates Apply Automatically</span>
     </div>
     <div class="panel-body">
-        <form asp-action="AddAppointment" asp-controller="Patient" method="post" class="form-grid">
-            <div asp-validation-summary="All" class="text-danger form-field full" role="alert"></div>
+        <form asp-action="AddAppointment" asp-controller="Patient" method="post" class="form-grid" id="patientBookingForm">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="validation-summary-errors form-field full" role="alert"></div>
+            }
 
+            <!-- Step 1: Select Medical Department -->
             <div class="form-field full">
-                <label class="form-label" asp-for="DoctorId">Select Specialist Physician</label>
-                <select asp-for="DoctorId" class="select" required>
+                <label class="form-label" for="bookingDeptSelect">Step 1 &mdash; Select Medical Department</label>
+                <select asp-for="DepartmentId" class="select" id="bookingDeptSelect">
+                    <option value="">All Departments (choose a medical unit)...</option>
+                    @if (Model.Departments != null)
+                    {
+                        foreach (var dept in Model.Departments)
+                        {
+                            <option value="@dept.Id" selected="@(Model.DepartmentId == dept.Id)">
+                                @dept.Name &bull; @(dept.FloorLocation ?? "Main Pavilion")
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Step 2: Select Specialist Doctor Filtered by Department -->
+            <div class="form-field full">
+                <label class="form-label" asp-for="DoctorId">Step 2 &mdash; Select Specialist Physician</label>
+                <select asp-for="DoctorId" class="select" id="bookingDoctorSelect" required>
                     <option value="">Choose a MANARA specialist...</option>
                     @if (Model.Doctors != null)
                     {
@@ -35,17 +56,46 @@
                             var feeText = isFollowUp
                                 ? $"Follow-Up: {doc.FollowUpFee:0} EGP (Reg: {doc.SessionPrice:0} EGP)"
                                 : $"{doc.SessionPrice:0} EGP (Follow-Up: {doc.FollowUpFee:0} EGP)";
-                            <option value="@doc.Id" selected="@(Model.DoctorId == doc.Id)">
-                                Dr. @doc.FirstName @doc.LastName — @(doc.Specialization?.Name ?? "Specialist") (@feeText)
+                            <option value="@doc.Id"
+                                    data-dept-id="@(doc.DepartmentId?.ToString() ?? "")"
+                                    selected="@(Model.DoctorId == doc.Id)">
+                                Dr. @doc.FirstName @doc.LastName — @(doc.Department?.Name ?? doc.Specialization?.Name ?? "Specialist") (@feeText)
                             </option>
                         }
                     }
                 </select>
                 <span asp-validation-for="DoctorId" class="text-danger"></span>
+
+                <div class="booking-cascade-grid" id="bookingDoctorCards">
+                    @if (Model.Doctors != null)
+                    {
+                        foreach (var doc in Model.Doctors)
+                        {
+                            var isFollowUp = followUpDocIds.Contains(doc.Id);
+                            var imgFile = string.IsNullOrWhiteSpace(doc.Image) ? "doc-salma.jpg" : doc.Image;
+                            var isSelected = Model.DoctorId == doc.Id;
+                            <button type="button"
+                                    class="booking-doc-card @(isSelected ? "selected" : "")"
+                                    data-select-doctor="@doc.Id"
+                                    data-dept-id="@(doc.DepartmentId?.ToString() ?? "")">
+                                <img src="@Url.Content("~/images/doctors/" + imgFile)" alt="Dr. @doc.FirstName @doc.LastName" class="booking-doc-avatar" />
+                                <div style="min-width:0;flex:1;">
+                                    <div class="booking-doc-name">Dr. @doc.FirstName @doc.LastName</div>
+                                    <div class="booking-doc-meta">@(doc.Department?.Name ?? doc.Specialization?.Name) &bull; @doc.Rating.ToString("0.0") &#9733;</div>
+                                    <div class="booking-doc-fee">
+                                        @doc.SessionPrice.ToString("0") EGP
+                                        &bull; @(isFollowUp ? $"Your Follow-Up: {doc.FollowUpFee:0} EGP" : $"Follow-Up: {doc.FollowUpFee:0} EGP")
+                                    </div>
+                                </div>
+                            </button>
+                        }
+                    }
+                </div>
             </div>
 
+            <!-- Step 3: Preferred Date & Notes -->
             <div class="form-field">
-                <label class="form-label" asp-for="AppointmentDate">Preferred Clinic Date</label>
+                <label class="form-label" asp-for="AppointmentDate">Step 3 &mdash; Preferred Clinic Date</label>
                 <input class="input" asp-for="AppointmentDate" type="date" value="@(Model.AppointmentDate > DateTime.Today ? Model.AppointmentDate.ToString("yyyy-MM-dd") : DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required />
                 <span asp-validation-for="AppointmentDate" class="text-danger"></span>
             </div>
@@ -57,7 +107,7 @@
             </div>
 
             <div class="form-field full" style="margin-top:8px;">
-                <button class="btn btn-primary" type="submit" style="width:100%;">Submit Appointment Request</button>
+                <button class="btn btn-primary" type="submit" style="width:100%;">Confirm Appointment Request</button>
             </div>
         </form>
     </div>

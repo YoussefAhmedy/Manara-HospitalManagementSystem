@@ -191,7 +191,7 @@ public sealed class PatientController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> AddAppointment(string? doctorId = null)
+    public async Task<IActionResult> AddAppointment(string? doctorId = null, int? departmentId = null)
     {
         var patientId = CurrentUserId();
         var followUpIds = string.IsNullOrWhiteSpace(patientId)
@@ -202,10 +202,30 @@ public sealed class PatientController : Controller
                 .Distinct()
                 .ToListAsync();
 
+        var departments = await _dbContext.Departments.AsNoTracking()
+            .Where(d => d.IsActive)
+            .OrderBy(d => d.Name)
+            .ToListAsync();
+
+        var doctors = await _dbContext.Doctors.AsNoTracking()
+            .Include(d => d.Department)
+            .Include(d => d.Specialization)
+            .Where(d => d.IsActive)
+            .OrderByDescending(d => d.IsTopRated)
+            .ThenBy(d => d.FirstName)
+            .ToListAsync();
+
+        if (departmentId is null && !string.IsNullOrWhiteSpace(doctorId))
+        {
+            departmentId = doctors.FirstOrDefault(d => d.Id == doctorId)?.DepartmentId;
+        }
+
         ViewBag.FollowUpDoctorIds = followUpIds;
         return View(new AppointmentVm
         {
-            Doctors = _doctorService.GetAllDoctors().Where(d => d.IsActive).ToList(),
+            Departments = departments,
+            Doctors = doctors,
+            DepartmentId = departmentId,
             DoctorId = doctorId ?? string.Empty
         });
     }
@@ -213,7 +233,23 @@ public sealed class PatientController : Controller
     [HttpPost]
     public async Task<IActionResult> AddAppointment(AppointmentVm model)
     {
-        model.Doctors = _doctorService.GetAllDoctors();
+        model.Departments = await _dbContext.Departments.AsNoTracking()
+            .Where(d => d.IsActive)
+            .OrderBy(d => d.Name)
+            .ToListAsync();
+        model.Doctors = await _dbContext.Doctors.AsNoTracking()
+            .Include(d => d.Department)
+            .Include(d => d.Specialization)
+            .Where(d => d.IsActive)
+            .OrderByDescending(d => d.IsTopRated)
+            .ThenBy(d => d.FirstName)
+            .ToListAsync();
+        ViewBag.FollowUpDoctorIds = await _dbContext.Appointments.AsNoTracking()
+            .Where(a => a.PatientID == CurrentUserId() && a.Status == AppointStatus.Completed && a.DoctorID != null)
+            .Select(a => a.DoctorID!)
+            .Distinct()
+            .ToListAsync();
+
         if (!ModelState.IsValid)
         {
             return View(model);

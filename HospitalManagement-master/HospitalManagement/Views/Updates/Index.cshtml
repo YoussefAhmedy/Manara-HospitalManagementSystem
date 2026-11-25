@@ -1,0 +1,403 @@
+@using Hospital.BLL.ModelVM
+@using Hospital.DAL.Entities.OwnedTypes
+@model UpdatesHubVm
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Updates & Notifications";
+}
+
+<section class="sanctuary-page-hero">
+    <div class="container">
+        <div class="page-head-row" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+                <div class="editorial-kicker">MANARA Continuity &amp; Alerts</div>
+                <h1 class="serif-display" style="font-size:38px;margin:8px 0 4px;">My Updates &amp; Clinical Timeline</h1>
+                <p style="color:var(--slate);font-size:14px;max-width:640px;">
+                    Unified stream of verified laboratory reports, PACS radiology impressions, attending physician notes, prescription schedules, follow-up appointments, and email notifications.
+                </p>
+            </div>
+            @if (Model.IsAuthenticated && Model.UnreadCount > 0)
+            {
+                <form asp-controller="Updates" asp-action="MarkAllRead" method="post">
+                    <button type="submit" class="btn btn-outline btn-sm">Mark All Read (@Model.UnreadCount)</button>
+                </form>
+            }
+        </div>
+    </div>
+</section>
+
+<section style="padding:36px 0 72px;background:var(--alabaster);">
+    <div class="container">
+        @if (Model.IsPatient)
+        {
+            var nextFollowUp = Model.Patient?.NextFollowUpDate;
+            var recoveryPct = Model.Patient?.RecoveryProgress ?? 0;
+            var hasAnyUpdates = Model.Notifications.Count > 0
+                                || Model.ReleasedLabOrders.Count > 0
+                                || Model.ReleasedImagingOrders.Count > 0
+                                || Model.Prescriptions.Count > 0
+                                || Model.DoctorNotes.Count > 0
+                                || Model.UpcomingAppointments.Count > 0
+                                || Model.CompletedAppointments.Count > 0
+                                || Model.PatientInquiries.Count > 0;
+
+            @if (!hasAnyUpdates)
+            {
+                <div class="sanctuary-card" style="text-align:center;max-width:660px;margin:12px auto 24px;padding:42px 32px;">
+                    <div class="editorial-kicker">All Caught Up</div>
+                    <h2 class="serif-display" style="font-size:28px;margin:10px 0 8px;">No New Clinical Updates</h2>
+                    <p style="color:var(--slate);font-size:14px;margin-bottom:22px;">
+                        No new updates, lab results, or messages at the moment — everything is up to date.
+                    </p>
+                    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                        <a class="btn btn-navy btn-sm" asp-controller="Patient" asp-action="AddAppointment" style="text-decoration:none;">Book Consultation</a>
+                        <a class="btn btn-outline btn-sm" asp-controller="Consult" asp-action="Index" style="text-decoration:none;">Ask a Specialist</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+            <!-- Patient Top Summary Banner -->
+            <div class="sanctuary-card" style="margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);">
+                        @(Model.Patient?.Mrn ?? "MANARA Patient") &bull; @Model.DisplayName
+                    </div>
+                    <h2 class="serif-display" style="font-size:28px;margin:4px 0;">
+                        @(Model.Patient?.ActiveCondition ?? "Active Preventive Wellness Plan")
+                    </h2>
+                    <p style="font-size:13.5px;color:var(--slate);max-width:680px;margin:0;">
+                        @(Model.Patient?.DoctorCareNotes ?? "All upcoming appointments and released diagnostics appear automatically below.")
+                    </p>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+                    @if (nextFollowUp.HasValue)
+                    {
+                        <span class="updates-tag ok">Recommended Follow-Up: @nextFollowUp.Value.ToString("ddd, dd MMM yyyy")</span>
+                    }
+                    <div style="font-size:12px;color:var(--slate);">Recovery Index: <strong>@recoveryPct%</strong></div>
+                    <a class="btn btn-navy btn-sm" asp-controller="Patient" asp-action="AddAppointment" style="text-decoration:none;">Book Follow-Up Visit</a>
+                </div>
+            </div>
+
+            <div class="sanctuary-cards-grid">
+                <!-- Notification & Email Dispatch Inbox -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Updates &amp; Email Inbox</h2>
+                        <span class="updates-tag">@Model.Notifications.Count alerts</span>
+                    </div>
+                    @if (Model.Notifications.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">No notifications yet. You will be alerted when results or doctor replies arrive.</p>
+                    }
+                    else
+                    {
+                        @foreach (var alert in Model.Notifications)
+                        {
+                            <div class="updates-item @(alert.IsRead ? "" : "unread")">
+                                <div class="updates-meta">
+                                    <span class="updates-tag">@alert.Category</span>
+                                    <span>@alert.CreatedAt.ToString("dd MMM yyyy · HH:mm") &bull; @alert.DeliveryStatus</span>
+                                </div>
+                                <div style="font-weight:700;font-size:13.5px;color:var(--navy);margin-bottom:4px;">@alert.Subject</div>
+                                <p style="font-size:12.5px;color:var(--slate);margin:0;">@alert.BodySummary</p>
+                            </div>
+                        }
+                    }
+                </article>
+
+                <!-- Verified Laboratory Results -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Released Laboratory Panels</h2>
+                        <span class="updates-tag ok">Two-Stage Verified</span>
+                    </div>
+                    @if (Model.ReleasedLabOrders.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">No released laboratory panels yet. Pending specimens appear only after specialist verification.</p>
+                    }
+                    else
+                    {
+                        @foreach (var lab in Model.ReleasedLabOrders)
+                        {
+                            <div class="updates-item">
+                                <div class="updates-meta">
+                                    <strong>@lab.Number &bull; Specimen @(lab.SpecimenId ?? "—")</strong>
+                                    <span>Released @(lab.ReleasedAtUtc?.ToString("dd MMM yyyy") ?? lab.CreatedAtUtc.ToString("dd MMM yyyy"))</span>
+                                </div>
+                                @foreach (var item in lab.Items)
+                                {
+                                    <div style="margin-top:6px;font-size:13px;">
+                                        <strong>@item.LabTest?.Name:</strong> @item.ResultValue @item.LabTest?.Unit
+                                        <span class="updates-tag ok" style="margin-left:6px;">@item.Flag</span>
+                                        @if (!string.IsNullOrWhiteSpace(item.Comment))
+                                        {
+                                            <div style="font-size:12px;color:var(--slate);margin-top:2px;">@item.Comment</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </article>
+
+                <!-- Released Radiology PACS Reports -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Released Radiology &amp; PACS</h2>
+                        <span class="updates-tag">Signed Reports</span>
+                    </div>
+                    @if (Model.ReleasedImagingOrders.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">No released imaging studies yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var img in Model.ReleasedImagingOrders)
+                        {
+                            <div class="updates-item">
+                                <div class="updates-meta">
+                                    <strong>@img.Number &bull; @img.Modality</strong>
+                                    <span>Verified @(img.VerifiedAtUtc?.ToString("dd MMM yyyy") ?? img.CreatedAtUtc.ToString("dd MMM yyyy"))</span>
+                                </div>
+                                <div style="font-weight:700;font-size:13.5px;color:var(--navy);margin-bottom:4px;">@img.StudyName</div>
+                                @if (!string.IsNullOrWhiteSpace(img.Impression))
+                                {
+                                    <p style="font-size:12.5px;color:var(--navy);margin:0 0 6px;"><strong>Impression:</strong> @img.Impression</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(img.Findings))
+                                {
+                                    <p style="font-size:12px;color:var(--slate);margin:0;">@img.Findings</p>
+                                }
+                            </div>
+                        }
+                    }
+                </article>
+
+                <!-- Active Prescriptions & Doctor Notes -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Prescriptions &amp; Clinical Notes</h2>
+                        <a class="btn btn-outline btn-xs" asp-controller="Patient" asp-action="MyCare" style="text-decoration:none;">Full Care View</a>
+                    </div>
+                    @foreach (var rx in Model.Prescriptions.Take(4))
+                    {
+                        <div class="updates-item">
+                            <div class="updates-meta">
+                                <strong>@rx.Number &bull; @rx.Status</strong>
+                                <a asp-controller="Pharmacy" asp-action="Print" asp-route-id="@rx.Id" style="font-size:11.5px;font-weight:600;color:var(--teal);text-decoration:none;">Print Rx Sheet &rarr;</a>
+                            </div>
+                            @foreach (var item in rx.Items)
+                            {
+                                <div style="font-size:12.5px;margin-top:4px;">
+                                    <strong>@item.Medication?.Name</strong> &mdash; @item.Dose (@item.Frequency)
+                                    @if (!string.IsNullOrWhiteSpace(item.IntakeSchedule))
+                                    {
+                                        <span style="color:var(--slate);">&bull; @item.IntakeSchedule</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    @foreach (var note in Model.DoctorNotes.Take(3))
+                    {
+                        <div class="updates-item">
+                            <div class="updates-meta">
+                                <span class="updates-tag">Signed Physician Note</span>
+                                <span>@(note.SignedAtUtc?.ToString("dd MMM yyyy") ?? note.CreatedAtUtc.ToString("dd MMM yyyy"))</span>
+                            </div>
+                            <p style="font-size:12.5px;color:var(--navy);margin:0;">@note.Content</p>
+                        </div>
+                    }
+                </article>
+
+                <!-- Appointments & Follow-Up Timeline -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Appointments &amp; Follow-Ups</h2>
+                        <a class="btn btn-navy btn-xs" asp-controller="Patient" asp-action="AddAppointment" style="text-decoration:none;">+ Book Visit</a>
+                    </div>
+                    @if (Model.UpcomingAppointments.Count == 0 && Model.CompletedAppointments.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">No scheduled or completed consultations yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var apt in Model.UpcomingAppointments)
+                        {
+                            Model.DoctorsById.TryGetValue(apt.DoctorID, out var doc);
+                            <div class="updates-item unread">
+                                <div class="updates-meta">
+                                    <span class="updates-tag">Upcoming &bull; @apt.Status</span>
+                                    <span>@apt.AppointmentDate.ToString("ddd, dd MMM yyyy")</span>
+                                </div>
+                                <div style="font-weight:700;font-size:13.5px;color:var(--navy);">
+                                    @(doc != null ? $"Dr. {doc.FirstName} {doc.LastName} · {doc.Department?.Name}" : "MANARA Specialist")
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(apt.Notes))
+                                {
+                                    <div style="font-size:12px;color:var(--slate);margin-top:3px;">@apt.Notes</div>
+                                }
+                            </div>
+                        }
+                        @foreach (var apt in Model.CompletedAppointments.Take(4))
+                        {
+                            Model.DoctorsById.TryGetValue(apt.DoctorID, out var doc);
+                            <div class="updates-item">
+                                <div class="updates-meta">
+                                    <span class="updates-tag ok">Completed &bull; Eligible for Follow-Up Fee (@(doc?.FollowUpFee.ToString("N0") ?? "150") EGP)</span>
+                                    <span>@apt.AppointmentDate.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                                    <strong style="font-size:13px;">@(doc != null ? $"Dr. {doc.FirstName} {doc.LastName}" : "Attending Specialist")</strong>
+                                    <a class="btn btn-outline btn-xs" asp-controller="Patient" asp-action="AddAppointment" asp-route-doctorId="@apt.DoctorID" style="text-decoration:none;">Book Follow-Up</a>
+                                </div>
+                            </div>
+                        }
+                    }
+                </article>
+
+                <!-- Patient Consultation Q&A History -->
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">My Specialist Q&amp;A Replies</h2>
+                        <a class="btn btn-outline btn-xs" asp-controller="Consult" asp-action="Index" style="text-decoration:none;">Ask Question</a>
+                    </div>
+                    @if (Model.PatientInquiries.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">Ask any clinical question in Consult &amp; Feedback — doctor responses appear here.</p>
+                    }
+                    else
+                    {
+                        @foreach (var inq in Model.PatientInquiries)
+                        {
+                            <div class="updates-item @(inq.Status == "Answered" && !inq.IsReadByPatient ? "unread" : "")">
+                                <div class="updates-meta">
+                                    <span class="updates-tag @(inq.Status == "Answered" ? "ok" : "warn")">@inq.Status</span>
+                                    <span>@(inq.Department?.Name ?? "General Medicine") &bull; @inq.CreatedAt.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div style="font-weight:700;font-size:13.5px;color:var(--navy);margin-bottom:4px;">@inq.Subject</div>
+                                <p style="font-size:12.5px;color:var(--slate);margin:0 0 8px;">Q: @inq.Question</p>
+                                @if (!string.IsNullOrWhiteSpace(inq.DoctorReply))
+                                {
+                                    <div style="padding:10px 12px;border-radius:8px;background:var(--white);border:1px solid var(--line);">
+                                        <div style="font-size:11px;font-weight:700;color:var(--teal);margin-bottom:3px;">@(inq.RepliedByName ?? "Attending Physician") replied:</div>
+                                        <div style="font-size:12.5px;color:var(--navy);">@inq.DoctorReply</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </article>
+            </div>
+            }
+        }
+        else
+        {
+            <!-- Doctor / Hospital Manager Clinical Coordination & Q&A Hub -->
+            <div class="sanctuary-card" style="margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                <div>
+                    <span class="updates-tag">Attending Clinician &amp; Coordination Hub</span>
+                    <h2 class="serif-display" style="font-size:28px;margin:6px 0 4px;">Welcome, @Model.DisplayName</h2>
+                    <p style="font-size:13.5px;color:var(--slate);margin:0;">
+                        Review assigned patient consultations and respond directly to incoming patient questions using evidence-based quick templates.
+                    </p>
+                </div>
+                <a class="btn btn-navy btn-sm" asp-controller="Dashboard" asp-action="Index" style="text-decoration:none;">Open Dark Clinical Workspace &rarr;</a>
+            </div>
+
+            <div class="sanctuary-cards-grid">
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Pending Patient Questions</h2>
+                        <span class="updates-tag warn">@Model.OpenInquiries.Count awaiting reply</span>
+                    </div>
+                    @if (Model.OpenInquiries.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">All incoming patient inquiries have been answered.</p>
+                    }
+                    else
+                    {
+                        @foreach (var q in Model.OpenInquiries)
+                        {
+                            var replyInputId = $"replyBox_{q.Id}";
+                            <div class="updates-item unread">
+                                <div class="updates-meta">
+                                    <strong>@q.PatientName (@q.PatientEmail)</strong>
+                                    <span>@(q.Department?.Name ?? "General") &bull; @q.CreatedAt.ToString("dd MMM · HH:mm")</span>
+                                </div>
+                                <div style="font-weight:700;font-size:14px;color:var(--navy);margin-bottom:4px;">@q.Subject</div>
+                                <p style="font-size:13px;color:var(--slate);margin:0 0 10px;">@q.Question</p>
+
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                                    @foreach (var tpl in Model.QuickReplyTemplates)
+                                    {
+                                        <button type="button" class="btn btn-outline btn-xs"
+                                                data-reply-target="@replyInputId"
+                                                data-reply-template="@tpl.TemplateText">
+                                            + @tpl.Label
+                                        </button>
+                                    }
+                                </div>
+
+                                <form asp-controller="Updates" asp-action="ReplyInquiry" method="post">
+                                    <input type="hidden" name="id" value="@q.Id" />
+                                    <textarea id="@replyInputId" name="replyText" class="textarea" rows="3" placeholder="Write clinical response or follow-up advice..." required></textarea>
+                                    <div style="margin-top:8px;display:flex;justify-content:flex-end;">
+                                        <button type="submit" class="btn btn-navy btn-sm">Send Reply &amp; Notify Patient</button>
+                                    </div>
+                                </form>
+                            </div>
+                        }
+                    }
+                </article>
+
+                <article class="sanctuary-card">
+                    <div class="sanctuary-card-head">
+                        <h2 class="sanctuary-card-title">Assigned Patients &amp; Recent Replies</h2>
+                        <a class="btn btn-outline btn-xs" asp-controller="Appointments" asp-action="Index" style="text-decoration:none;">Schedule Queue</a>
+                    </div>
+                    @if (Model.AssignedPatientVisits.Count == 0)
+                    {
+                        <p style="color:var(--slate);font-size:13px;">No patient appointments currently queued.</p>
+                    }
+                    else
+                    {
+                        @foreach (var visit in Model.AssignedPatientVisits.Take(6))
+                        {
+                            <div class="updates-item">
+                                <div class="updates-meta">
+                                    <span class="updates-tag">@visit.Status</span>
+                                    <span>@visit.AppointmentDate.ToString("ddd, dd MMM yyyy")</span>
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                    <div>
+                                        <strong style="font-size:13.5px;">@visit.Patient?.FirstName @visit.Patient?.LastName</strong>
+                                        <div style="font-size:12px;color:var(--slate);">@visit.Number &bull; Dr. @visit.Doctor?.FirstName @visit.Doctor?.LastName</div>
+                                    </div>
+                                    @if (visit.EncounterId.HasValue)
+                                    {
+                                        <a class="btn btn-outline btn-xs" asp-controller="Encounters" asp-action="Details" asp-route-id="@visit.EncounterId.Value" style="text-decoration:none;">Encounter</a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @foreach (var ans in Model.AnsweredInquiries.Take(3))
+                    {
+                        <div class="updates-item">
+                            <div class="updates-meta">
+                                <span class="updates-tag ok">Answered by @(ans.RepliedByName ?? "Clinician")</span>
+                                <span>@ans.RepliedAt?.ToString("dd MMM")</span>
+                            </div>
+                            <strong style="font-size:13px;">@ans.Subject</strong>
+                            <div style="font-size:12px;color:var(--slate);margin-top:3px;">@ans.DoctorReply</div>
+                        </div>
+                    }
+                </article>
+            </div>
+        }
+    </div>
+</section>

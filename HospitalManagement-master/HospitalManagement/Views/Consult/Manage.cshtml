@@ -1,0 +1,116 @@
+@using Hospital.BLL.ModelVM
+@model ManageFeedbackVm
+@{
+    Layout = "_WorkspaceLayout";
+    ViewData["Title"] = "Feedback & Concerns";
+    ViewData["Subtitle"] = "Hospital Manager oversight for patient reviews, suggestions, and complaints.";
+}
+
+<div class="ws-header">
+    <div>
+        <div class="editorial-kicker">Patient Experience &amp; Governance</div>
+        <h1 class="ws-title">Patient Feedback &amp; Concerns</h1>
+    </div>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMsg)
+{
+    <div class="status-message" role="status">@statusMsg</div>
+}
+
+<form method="get" class="filter-bar">
+    <div class="form-grid" style="align-items:end;">
+        <div class="form-field">
+            <label class="form-label" for="catFilter">Category</label>
+            <select class="select" id="catFilter" name="category">
+                <option value="">All Categories</option>
+                <option value="Complaint" selected="@(Model.SelectedCategory == "Complaint" ? "selected" : null)">Complaints</option>
+                <option value="Suggestion" selected="@(Model.SelectedCategory == "Suggestion" ? "selected" : null)">Suggestions</option>
+                <option value="Review" selected="@(Model.SelectedCategory == "Review" ? "selected" : null)">Star Reviews</option>
+            </select>
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="statFilter">Status</label>
+            <select class="select" id="statFilter" name="status">
+                <option value="">All Statuses</option>
+                <option value="New" selected="@(Model.SelectedStatus == "New" ? "selected" : null)">New</option>
+                <option value="Reviewed" selected="@(Model.SelectedStatus == "Reviewed" ? "selected" : null)">Reviewed</option>
+                <option value="Resolved" selected="@(Model.SelectedStatus == "Resolved" ? "selected" : null)">Resolved</option>
+            </select>
+        </div>
+        <div class="action-row">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a asp-controller="Consult" asp-action="Manage" class="btn btn-sm">Reset</a>
+        </div>
+    </div>
+</form>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2 class="panel-title">Submitted Feedback Ledger</h2>
+        <span class="badge">@Model.Items.Count entries</span>
+    </div>
+    <div class="panel-body">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="state__title">No matching feedback records</div>
+                <div class="state__text">Patient reviews, clinic suggestions, and complaints submitted via Consult &amp; Feedback appear here.</div>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type &amp; Target</th>
+                        <th>Author</th>
+                        <th>Subject &amp; Message</th>
+                        <th>Status</th>
+                        <th>Resolution Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="tabular">@item.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <span class="badge">@item.Category</span>
+                                <div style="font-size:11.5px;margin-top:4px;">@item.TargetScope: @(item.TargetName ?? "Hospital")</div>
+                                @if (item.Rating.HasValue)
+                                {
+                                    <div style="font-size:11.5px;margin-top:2px;">Rating: @item.Rating / 5</div>
+                                }
+                            </td>
+                            <td>
+                                <strong>@item.AuthorName</strong>
+                                <div style="font-size:11.5px;">@item.AuthorEmail</div>
+                            </td>
+                            <td>
+                                <strong>@item.Subject</strong>
+                                <div style="font-size:12px;margin-top:3px;">@item.Message</div>
+                                @if (!string.IsNullOrWhiteSpace(item.ManagerNotes))
+                                {
+                                    <div style="font-size:11.5px;margin-top:4px;">Note: @item.ManagerNotes</div>
+                                }
+                            </td>
+                            <td><span class="badge badge-navy">@item.Status</span></td>
+                            <td>
+                                <form asp-controller="Consult" asp-action="ResolveFeedback" method="post" style="display:flex;flex-direction:column;gap:6px;min-width:210px;">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input class="input" type="text" name="managerNotes" value="@item.ManagerNotes" placeholder="Resolution note..." />
+                                    <div style="display:flex;gap:6px;">
+                                        <button type="submit" name="status" value="Reviewed" class="btn btn-sm">Reviewed</button>
+                                        <button type="submit" name="status" value="Resolved" class="btn btn-primary btn-sm">Resolve</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

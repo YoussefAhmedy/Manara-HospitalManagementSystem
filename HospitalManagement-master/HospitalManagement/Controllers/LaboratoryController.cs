@@ -21,7 +21,8 @@ public sealed class LaboratoryController(
     ILabService lab,
     IWorkspaceService workspace,
     HospitalDbContext dbContext,
-    IAuditLogger audit) : Controller
+    IAuditLogger audit,
+    IEmailNotificationService notifications) : Controller
 {
     private string CurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
@@ -105,6 +106,20 @@ public sealed class LaboratoryController(
         }
 
         await audit.RecordAsync($"lab.order.{target.ToString().ToLowerInvariant()}", CurrentUserId(), null, "LabOrder", id.ToString(), cancellationToken);
+        if (target == LabOrderStatus.Released)
+        {
+            var releasedOrder = await dbContext.LabOrders.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+            if (releasedOrder is not null)
+            {
+                await notifications.NotifyUserAsync(
+                    releasedOrder.PatientId,
+                    "LabResult",
+                    $"Laboratory Report Released ({releasedOrder.Number})",
+                    $"Your verified laboratory results for order {releasedOrder.Number} are now ready to review in My Updates.",
+                    "/Updates",
+                    cancellationToken);
+            }
+        }
         TempData["StatusMessage"] = target switch
         {
             LabOrderStatus.Collected => "Specimen collected and labelled.",

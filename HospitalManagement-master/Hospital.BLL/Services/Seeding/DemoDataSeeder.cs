@@ -44,16 +44,16 @@ public sealed class DemoDataSeeder(
             return "Demo data already present; ensured MANARA role accounts.";
         }
 
-        var branch = new Branch { Name = "CareAxis Central", Code = "CAX-01", City = "Alexandria", Phone = "+20 3 000 0000" };
+        var branch = new Branch { Name = "MANARA Medical Complex", Code = "MNR-01", City = "Alexandria", Phone = "+20 3 480 0190" };
         dbContext.Branches.Add(branch);
 
         var departments = new List<Department>
         {
             new() { Name = "Internal Medicine", Code = "IM", Branch = branch },
             new() { Name = "Cardiology", Code = "CARD", Branch = branch },
-            new() { Name = "Paediatrics", Code = "PAED", Branch = branch },
-            new() { Name = "Laboratory", Code = "LAB", Branch = branch },
-            new() { Name = "Radiology", Code = "RAD", Branch = branch },
+            new() { Name = "Pediatrics", Code = "PED", Branch = branch },
+            new() { Name = "Clinical Laboratory", Code = "LAB", Branch = branch },
+            new() { Name = "Radiology & Imaging", Code = "RAD", Branch = branch },
             new() { Name = "Pharmacy", Code = "PHM", Branch = branch }
         };
         dbContext.Departments.AddRange(departments);
@@ -62,7 +62,7 @@ public sealed class DemoDataSeeder(
         {
             new() { Name = "Internal Medicine" },
             new() { Name = "Cardiology" },
-            new() { Name = "Paediatrics" }
+            new() { Name = "Pediatrics" }
         };
         dbContext.Specializations.AddRange(specializations);
 
@@ -170,7 +170,7 @@ public sealed class DemoDataSeeder(
 
         var staffSeeds = new (string Handle, string First, string Last, Role Role)[]
         {
-            ("admin", "Amina", "Farouk", Role.HospitalAdmin),
+            ("youssef.manager.seed", "Youssef", "El-Masry", Role.HospitalAdmin),
             ("reception", "Nour", "Samir", Role.Receptionist),
             ("nurse", "Hala", "Ibrahim", Role.Nurse),
             ("lab", "Youssef", "Kamel", Role.LabTechnician),
@@ -501,7 +501,7 @@ public sealed class DemoDataSeeder(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 1. Ensure all 8 Departments with rich clinical metadata
+        // 1. Ensure all 9 Active Clinical & Diagnostic Departments (zero duplicates / zero empty departments)
         var deptDefs = new (string Name, string Code, string Floor, string Desc, string Caps)[]
         {
             ("Cardiology", "CARD", "Main Pavilion · Floor 3",
@@ -527,7 +527,10 @@ public sealed class DemoDataSeeder(
              "EEG Monitoring · Nerve Conduction · Migraine Clinic · Stroke Follow-Up"),
             ("Dermatology", "DERM", "Aesthetic & Clinical Wing · Floor 2",
              "Evidence-based medical dermatology, dermoscopy skin screening, allergic dermatitis treatment, and minor dermatologic surgery.",
-             "Digital Dermoscopy · Allergy Patching · Eczema Care · Minor Surgery")
+             "Digital Dermoscopy · Allergy Patching · Eczema Care · Minor Surgery"),
+            ("Pharmacy", "PHM", "Main Pavilion · Ground",
+             "Clinical pharmacotherapy consultations, anticoagulation dosing stewardship, pharmacogenomics, and verified inpatient/outpatient dispensing.",
+             "Pharmacogenomics · Anticoagulation Clinic · Polypharmacy Review · Therapeutics")
         };
 
         var depts = new Dictionary<string, Department>(StringComparer.OrdinalIgnoreCase);
@@ -559,6 +562,33 @@ public sealed class DemoDataSeeder(
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             depts[def.Name] = dept;
+        }
+
+        // Consolidate legacy duplicate "Paediatrics" (PAED) into canonical "Pediatrics" (PED)
+        if (depts.TryGetValue("Pediatrics", out var canonicalPed))
+        {
+            var dupPaeds = await dbContext.Departments
+                .Where(d => (d.Code == "PAED" || d.Name == "Paediatrics") && d.Id != canonicalPed.Id)
+                .ToListAsync(cancellationToken);
+            foreach (var dup in dupPaeds)
+            {
+                await dbContext.Doctors.Where(d => d.DepartmentId == dup.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.DepartmentId, canonicalPed.Id), cancellationToken);
+                await dbContext.Encounters.Where(e => e.DepartmentId == dup.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.DepartmentId, canonicalPed.Id), cancellationToken);
+                await dbContext.ServiceItems.Where(si => si.DepartmentId == dup.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.DepartmentId, canonicalPed.Id), cancellationToken);
+                await dbContext.Wards.Where(w => w.DepartmentId == dup.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.DepartmentId, canonicalPed.Id), cancellationToken);
+                await dbContext.ConsultationInquiries.Where(c => c.DepartmentId == dup.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.DepartmentId, canonicalPed.Id), cancellationToken);
+
+                dbContext.Departments.Remove(dup);
+            }
+            if (dupPaeds.Count > 0)
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
         }
 
         // 2. Ensure all 8 Specializations
@@ -621,15 +651,88 @@ public sealed class DemoDataSeeder(
                     }
                 }
             }
+            else
+            {
+                // Sync name/gender/confirmation and clear any lockout for demo accounts
+                bool needsUpdate = false;
+                if (user.FirstName != first) { user.FirstName = first; needsUpdate = true; }
+                if (user.LastName != last) { user.LastName = last; needsUpdate = true; }
+                if (string.IsNullOrWhiteSpace(user.Gender)) { user.Gender = gender; needsUpdate = true; }
+                if (!user.EmailConfirmed) { user.EmailConfirmed = true; needsUpdate = true; }
+                if (user.LockoutEnd is not null || user.AccessFailedCount > 0)
+                {
+                    user.LockoutEnd = null;
+                    user.AccessFailedCount = 0;
+                    needsUpdate = true;
+                }
+                if (needsUpdate) await userManager.UpdateAsync(user);
+
+                // Reset demo password to the unified DemoPassword so all accounts share one known credential
+                var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+                await userManager.ResetPasswordAsync(user, resetToken, password);
+
+                // Ensure roles are still assigned
+                var existingRoles = await userManager.GetRolesAsync(user);
+                foreach (var role in roles)
+                {
+                    if (!existingRoles.Contains(role))
+                        await userManager.AddToRoleAsync(user, role);
+                }
+            }
             return user;
         }
 
-        await EnsureUserAsync("omar.admin@gmail.com", "Admin@2026", "Omar", "Ahmedy", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
-        await EnsureUserAsync("nourhan.receptionist@gmail.com", "Recep@2026", "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
-        await EnsureUserAsync("hossam.labtech@gmail.com", "Lab@2026", "Hossam", "Gamal", "Male", [Role.LabTechnician.ToString()]);
-        await EnsureUserAsync("ramez.radiologist@gmail.com", "Rad@2026", "Ramez", "Mansour", "Male", [Role.Radiologist.ToString()]);
-        await EnsureUserAsync("mona.pharmacist@gmail.com", "Pharm@2026", "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
-        await EnsureUserAsync("sherif.billing@gmail.com", "Bill@2026", "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
+        // Purge any legacy generic "admin" accounts cleanly so only named accounts exist
+        var legacyAdminEmails = new[]
+        {
+            "admin@manara.hospital",
+            "admin@manara.internal",
+            "admin@example.invalid",
+            "omar.admin@gmail.com"
+        };
+        var legacyAdminUsers = await dbContext.Users
+            .Where(u => (u.Email != null && legacyAdminEmails.Contains(u.Email)) || u.UserName == "admin")
+            .ToListAsync(cancellationToken);
+        foreach (var legacyUser in legacyAdminUsers)
+        {
+            var legacyId = legacyUser.Id;
+            var currentRoles = await userManager.GetRolesAsync(legacyUser);
+            if (currentRoles.Count > 0)
+            {
+                await userManager.RemoveFromRolesAsync(legacyUser, currentRoles);
+            }
+
+            try
+            {
+                var deleted = await userManager.DeleteAsync(legacyUser);
+                if (deleted.Succeeded) continue;
+            }
+            catch
+            {
+                // Historical foreign keys reference this user ID; retire cleanly
+            }
+
+            dbContext.ChangeTracker.Clear();
+            var trackedLegacy = await userManager.FindByIdAsync(legacyId);
+            if (trackedLegacy is not null)
+            {
+                trackedLegacy.EmailConfirmed = false;
+                trackedLegacy.LockoutEnabled = true;
+                trackedLegacy.LockoutEnd = DateTimeOffset.MaxValue;
+                trackedLegacy.FirstName = "Retired";
+                trackedLegacy.LastName = "Account";
+                trackedLegacy.UserName = $"retired.{trackedLegacy.Id[..Math.Min(8, trackedLegacy.Id.Length)]}";
+                trackedLegacy.Email = $"{trackedLegacy.UserName}@retired.local";
+                await userManager.UpdateAsync(trackedLegacy);
+            }
+        }
+
+        await EnsureUserAsync("youssef.manager@gmail.com", DemoPassword, "Youssef", "Ahmed El-Sayed", "Male", [Role.Admin.ToString(), Role.HospitalAdmin.ToString()]);
+        await EnsureUserAsync("nourhan.receptionist@gmail.com", DemoPassword, "Nourhan", "Adel", "Female", [Role.Receptionist.ToString()]);
+        await EnsureUserAsync("hossam.labtech@gmail.com", DemoPassword, "Hossam", "Gamal", "Male", [Role.LabTechnician.ToString()]);
+        await EnsureUserAsync("ramez.radiologist@gmail.com", DemoPassword, "Ramez", "Mansour", "Male", [Role.Radiologist.ToString()]);
+        await EnsureUserAsync("mona.pharmacist@gmail.com", DemoPassword, "Mona", "El-Gamal", "Female", [Role.Pharmacist.ToString()]);
+        await EnsureUserAsync("sherif.billing@gmail.com", DemoPassword, "Sherif", "Kamel", "Male", [Role.BillingOfficer.ToString()]);
 
         // Primary Patient with seeded recovery & care plan
         var ahmedPatient = await userManager.FindByEmailAsync("ahmed.patient@gmail.com") as Patient;
@@ -712,13 +815,13 @@ public sealed class DemoDataSeeder(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 5. Seed the 16 Unique-Portrait Specialist Doctors across all 8 Departments (2 Doctors each)
+        // 5. Seed 45 Unique-Portrait Specialist Doctors across all 9 Departments (5 Doctors per Department)
         var doctorCatalog = new (
             string Email, string First, string Last, string Gender, string DeptName,
             string Title, string Credentials, string Room, decimal Fee, decimal FollowUpFee,
             int ExpYears, decimal Rating, int Reviews, bool TopRated, string Bio, string Img, string Seal, DayOfWeek[] Days)[]
         {
-            // Cardiology
+            // ── Cardiology (5) ──
             ("salma.cardiologist@gmail.com", "Salma", "El-Sayed", "Female", "Cardiology",
              "Senior Consultant Cardiologist", "MD, FESC", "Clinic 301", 600, 200, 14, 4.95m, 186, true,
              "Fellow of the European Society of Cardiology specializing in echocardiography, preventive heart care, and women's cardiovascular wellness.",
@@ -727,8 +830,20 @@ public sealed class DemoDataSeeder(
              "Consultant Interventional Cardiologist", "MD, FACC", "Clinic 302", 700, 220, 16, 4.85m, 119, false,
              "Specialist in coronary risk stratification, complex hypertension therapy, and non-invasive cardiac diagnostics.",
              "doc-hisham.jpg", "HEART INSTITUTE • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("dina.cardiologist@gmail.com", "Dina", "El-Sharif", "Female", "Cardiology",
+             "Preventive Lipid & Hypertension Consultant", "MD, FESC", "Clinic 303", 550, 180, 11, 4.88m, 94, false,
+             "Focuses on familial dyslipidemia, resistant blood pressure optimization, and longitudinal preventive cardiology.",
+             "doc-dina.jpg", "PREVENTIVE CARDIO • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("omar.khaled.cardiologist@gmail.com", "Omar", "Khaled", "Male", "Cardiology",
+             "Consultant Cardiac Electrophysiologist", "MD, PhD", "Clinic 304", 720, 240, 15, 4.91m, 128, false,
+             "Arrhythmia specialist leading Holter telemetry evaluation, atrial fibrillation care, and syncope diagnostics.",
+             "doc-omar-k.jpg", "RHYTHM CARE • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("helena.cardiologist@gmail.com", "Helena", "Kostas", "Female", "Cardiology",
+             "Consultant Cardiac Imaging Specialist", "MD, EACVI", "Clinic 305", 640, 210, 13, 4.89m, 81, false,
+             "Directs 3D transthoracic stress echocardiography and congenital adult valvular follow-up.",
+             "doc-helena.jpg", "CARDIAC IMAGING • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
-            // Internal Medicine
+            // ── Internal Medicine (5) ──
             ("karim.internist@gmail.com", "Karim", "Mansour", "Male", "Internal Medicine",
              "Head of Internal Medicine", "MD, MRCP", "Clinic 204", 450, 150, 18, 4.88m, 142, false,
              "Royal College of Physicians fellow leading comprehensive metabolic screening, diabetes care, and adult chronic disease programs.",
@@ -737,8 +852,20 @@ public sealed class DemoDataSeeder(
              "Consultant Endocrinologist", "MD, PhD", "Clinic 205", 500, 160, 12, 4.84m, 97, false,
              "Dedicated to thyroid disorders, hormonal longevity, insulin resistance, and personalized executive health plans.",
              "doc-mariam.jpg", "METABOLIC CARE • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("bassem.internist@gmail.com", "Bassem", "Tawfik", "Male", "Internal Medicine",
+             "Consultant Hepatology & GI Internist", "MD, MRCP", "Clinic 206", 480, 160, 14, 4.86m, 108, false,
+             "Guides non-invasive hepatic care, digestive inflammatory management, and structured metabolic reversal.",
+             "doc-bassem.jpg", "HEPATIC CARE • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("rana.internist@gmail.com", "Rana", "El-Gohary", "Female", "Internal Medicine",
+             "Infectious Disease & Immunity Consultant", "MD, MSc", "Clinic 207", 440, 140, 9, 4.83m, 72, false,
+             "Specializes in autoimmune screening, post-viral fatigue recovery, and adult travel immunizations.",
+             "doc-rana.jpg", "IMMUNE HEALTH • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("sameh.internist@gmail.com", "Sameh", "Mikhail", "Male", "Internal Medicine",
+             "Senior Geriatrics & Multimorbidity Physician", "MD, FRCP", "Clinic 209", 520, 170, 24, 4.92m, 154, false,
+             "Senior internist coordinating integrative senior wellness, renal protection, and medication harmonization.",
+             "doc-sameh.jpg", "SENIOR WELLNESS • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
 
-            // Orthopedics
+            // ── Orthopedics (5) ──
             ("tarek.orthopedist@gmail.com", "Tarek", "Nabil", "Male", "Orthopedics",
              "Consultant Orthopedic Surgeon", "MD, FRCS", "Clinic 112", 550, 180, 19, 4.92m, 164, true,
              "Senior orthopedic reconstructive specialist focused on minimally invasive joint arthroscopy and spine preservation.",
@@ -747,8 +874,20 @@ public sealed class DemoDataSeeder(
              "Sports Injury & Joint Specialist", "MD, FAAOS", "Clinic 114", 600, 200, 13, 4.78m, 88, false,
              "Sports medicine consultant guiding athletes and active adults through ligament recovery and precision biomechanics.",
              "doc-sherif.jpg", "SPORTS ORTHOPEDICS • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("ashraf.orthopedist@gmail.com", "Ashraf", "Abdelmalak", "Male", "Orthopedics",
+             "Senior Arthroplasty & Hip/Knee Consultant", "MD, FRCS", "Clinic 115", 620, 200, 21, 4.89m, 131, false,
+             "Dedicated to robotic-assisted knee and hip joint preservation and structured post-operative mobility.",
+             "doc-ashraf.jpg", "JOINT SURGERY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("yara.orthopedist@gmail.com", "Yara", "Hegazy", "Female", "Orthopedics",
+             "Hand, Wrist & Microsurgery Specialist", "MD, FEBOT", "Clinic 116", 520, 170, 10, 4.87m, 79, false,
+             "European Board specialist treating tendon entrapment, wrist instability, and pediatric fracture recovery.",
+             "doc-yara.jpg", "HAND & UPPER LIMB • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("ramy.orthopedist@gmail.com", "Ramy", "El-Banna", "Male", "Orthopedics",
+             "Consultant Spine & Trauma Orthopedist", "MD, PhD", "Clinic 118", 580, 190, 15, 4.84m, 102, false,
+             "Focuses on cervical and lumbar disc stabilization, scoliosis evaluation, and rapid trauma recovery.",
+             "doc-ramy.jpg", "SPINE CARE • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
 
-            // Pediatrics
+            // ── Pediatrics (5) ──
             ("nadia.pediatrician@gmail.com", "Nadia", "Farouk", "Female", "Pediatrics",
              "Senior Specialist Pediatrician", "MD, MRCPCH", "Clinic 105", 400, 120, 11, 4.94m, 158, true,
              "Gentle family pediatrician focusing on early childhood milestones, respiratory wellness, and preventive immunization.",
@@ -757,8 +896,20 @@ public sealed class DemoDataSeeder(
              "Consultant Adolescent Pediatrician", "MD, DCH", "Clinic 107", 380, 120, 9, 4.86m, 134, false,
              "Warm, attentive pediatric specialist dedicated to developmental nutrition, pediatric allergy management, and newborn follow-up.",
              "doc-hana.jpg", "PEDIATRIC SANCTUARY • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("noura.pediatrician@gmail.com", "Noura", "El-Wakeel", "Female", "Pediatrics",
+             "Pediatric Allergy & Pulmonology Consultant", "MD, EAACI", "Clinic 108", 420, 130, 12, 4.90m, 114, false,
+             "Guides childhood asthma control, food allergy testing, and serene seasonal respiratory care.",
+             "doc-noura.jpg", "CHILD RESPIRATORY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("hatem.pediatrician@gmail.com", "Hatem", "Shoukry", "Male", "Pediatrics",
+             "Consultant Neonatologist & NICU Lead", "MD, PhD", "Clinic 109", 460, 150, 16, 4.88m, 96, false,
+             "Specializes in premature infant developmental follow-up, feeding milestones, and early neonatal screening.",
+             "doc-hatem.jpg", "NEONATAL CARE • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("ines.pediatrician@gmail.com", "Ines", "Mansour", "Female", "Pediatrics",
+             "Pediatric Neurodevelopment Specialist", "MD, MRCPCH", "Clinic 110", 430, 140, 10, 4.85m, 68, false,
+             "Focuses on school-readiness neurodevelopment, sleep hygiene, and sensory-friendly family consultations.",
+             "doc-ines.jpg", "DEVELOPMENTAL CARE • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
-            // Radiology & Imaging
+            // ── Radiology & Imaging (5) ──
             ("amr.radiologist@gmail.com", "Amr", "Fouad", "Male", "Radiology & Imaging",
              "Consultant Diagnostic Radiologist", "MD, FRCR", "Imaging Suite 1", 450, 150, 17, 4.85m, 92, false,
              "Fellow of the Royal College of Radiologists overseeing 3T MRI interpretation, cardiac CT, and rapid PACS verification.",
@@ -767,18 +918,42 @@ public sealed class DemoDataSeeder(
              "Consultant Musculoskeletal Radiologist", "MD, EDiR", "Imaging Suite 2", 480, 160, 11, 4.90m, 105, false,
              "European Diploma radiologist specializing in high-resolution joint MRI, breast imaging, and vascular Doppler ultrasound.",
              "doc-farida.jpg", "PRECISION IMAGING • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("walid.radiologist@gmail.com", "Walid", "El-Sawy", "Male", "Radiology & Imaging",
+             "Consultant Neuroradiologist", "MD, PhD", "Imaging Suite 3", 520, 170, 14, 4.87m, 83, false,
+             "Specializes in 3T brain & spine MRI, functional neuro-tractography, and low-dose cranial angiography.",
+             "doc-walid.jpg", "NEURO IMAGING • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("christine.radiologist@gmail.com", "Christine", "Dimitri", "Female", "Radiology & Imaging",
+             "Interventional & Body Radiologist", "MD, EBIR", "Imaging Suite 4", 540, 180, 12, 4.89m, 77, false,
+             "Performs ultrasound-guided biopsies, thyroid fine-needle diagnostics, and multi-slice abdominal CT correlation.",
+             "doc-christine.jpg", "INTERVENTIONAL PACS • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("ziad.radiologist@gmail.com", "Ziad", "El-Araby", "Male", "Radiology & Imaging",
+             "Cardiac CT & Thoracic Radiologist", "MD, EDiR", "Imaging Suite 5", 490, 160, 9, 4.82m, 61, false,
+             "Dedicated to coronary calcium scoring, high-resolution chest CT, and digital PACS quality review.",
+             "doc-ziad.jpg", "CARDIOTHORACIC PACS • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
-            // Clinical Laboratory
+            // ── Clinical Laboratory (5) ──
             ("laila.pathologist@gmail.com", "Laila", "Kamel", "Female", "Clinical Laboratory",
-             "Chief Clinical Pathologist", "MD, FRCPath", "Lab Central", 350, 100, 15, 4.83m, 76, false,
+             "Chief Clinical Pathologist", "MD, FRCPath", "Lab Central", 350, 100, 15, 4.88m, 118, false,
              "Directs MANARA's two-step laboratory verification gate, hematology profiling, and molecular biomarker assurance.",
-             "doc-laila.jpg", "CLINICAL PATHOLOGY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+             "doc-laila-v2.jpg", "CLINICAL PATHOLOGY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
             ("yasser.pathologist@gmail.com", "Yasser", "Ibrahim", "Male", "Clinical Laboratory",
              "Consultant Clinical Biochemist", "MD, PhD", "Lab Diagnostic 2", 360, 110, 10, 4.76m, 64, false,
              "Specializes in clinical chemistry panels, autoimmune assays, and precision metabolic diagnostics.",
              "doc-yasser.jpg", "DIAGNOSTIC LAB • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("maya.pathologist@gmail.com", "Maya", "Haddad", "Female", "Clinical Laboratory",
+             "Consultant Hematopathologist", "MD, FRCPath", "Lab Diagnostic 3", 390, 120, 12, 4.86m, 73, false,
+             "Oversees flow cytometry, coagulation cascades, anemia workups, and critical value escalation.",
+             "doc-maya.jpg", "HEMATOPATHOLOGY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("fady.pathologist@gmail.com", "Fady", "Youssef", "Male", "Clinical Laboratory",
+             "Consultant Medical Microbiologist", "MD, MSc", "Lab Diagnostic 4", 370, 110, 11, 4.81m, 59, false,
+             "Leads antimicrobial susceptibility panels, molecular PCR testing, and hospital infection-control surveillance.",
+             "doc-fady.jpg", "MICROBIOLOGY LAB • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("samar.pathologist@gmail.com", "Samar", "Nossier", "Female", "Clinical Laboratory",
+             "Clinical Endocrinology & Cytogenetics Lead", "MD, PhD", "Lab Diagnostic 5", 400, 130, 13, 4.90m, 84, false,
+             "Specializes in hormone immunoassay calibration, prenatal biomarker screening, and genetic precision.",
+             "doc-samar.jpg", "MOLECULAR LAB • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
-            // Neurology
+            // ── Neurology (5) ──
             ("sara.neurologist@gmail.com", "Sara", "El-Gamal", "Female", "Neurology",
              "Senior Consultant Neurologist", "MD, FEBN", "Clinic 401", 650, 220, 13, 4.93m, 151, true,
              "European Board neurologist specializing in migraine management, epilepsy care, and neuro-vascular recovery.",
@@ -787,8 +962,20 @@ public sealed class DemoDataSeeder(
              "Consultant Neurophysiologist", "MD, PhD", "Clinic 403", 750, 250, 21, 4.87m, 112, false,
              "Renowned authority in EEG diagnostics, nerve conduction studies, and movement disorder therapeutics.",
              "doc-mostafa.jpg", "NEUROPHYSIOLOGY • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+            ("tamer.neurologist@gmail.com", "Tamer", "El-Khouly", "Male", "Neurology",
+             "Stroke & Cerebrovascular Consultant", "MD, FEBN", "Clinic 404", 680, 220, 16, 4.89m, 104, false,
+             "Leads secondary stroke prevention, carotid Doppler integration, and post-ischemic cognitive rehabilitation.",
+             "doc-tamer.jpg", "NEUROVASCULAR • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("aliaa.neurologist@gmail.com", "Aliaa", "Darwish", "Female", "Neurology",
+             "Movement & Neuromuscular Neurologist", "MD, PhD", "Clinic 405", 620, 200, 14, 4.91m, 89, false,
+             "Specialist in tremor modulation, peripheral neuropathy diagnostics, and EMG-guided therapy.",
+             "doc-alia.jpg", "NEUROMUSCULAR • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("mazen.neurologist@gmail.com", "Mazen", "El-Refai", "Male", "Neurology",
+             "Clinical Headache & Sleep Neurologist", "MD, MSc", "Clinic 406", 580, 190, 9, 4.84m, 67, false,
+             "Focuses on refractory migraine biologics, cluster headaches, and polysomnography sleep disorders.",
+             "doc-mazen.jpg", "HEADACHE CLINIC • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday]),
 
-            // Dermatology
+            // ── Dermatology (5) ──
             ("yasmin.dermatologist@gmail.com", "Yasmin", "Zaki", "Female", "Dermatology",
              "Consultant Clinical Dermatologist", "MD, FAAD", "Clinic 208", 500, 150, 10, 4.91m, 173, false,
              "Fellow of the American Academy of Dermatology focused on digital dermoscopy, skin barrier restoration, and allergic skin conditions.",
@@ -796,7 +983,41 @@ public sealed class DemoDataSeeder(
             ("khaled.dermatologist@gmail.com", "Khaled", "Hassan", "Male", "Dermatology",
              "Consultant Dermatologic Surgeon", "MD, PhD", "Clinic 210", 550, 180, 14, 4.79m, 89, false,
              "Specialist in precision dermatologic procedures, laser therapeutics, and restorative skin medicine.",
-             "doc-khaled.jpg", "DERM SURGERY • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday])
+             "doc-khaled.jpg", "DERM SURGERY • MANARA", [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("salma.naguib.dermatologist@gmail.com", "Salma", "Naguib", "Female", "Dermatology",
+             "Pediatric & Restorative Dermatologist", "MD, FAAD", "Clinic 211", 490, 150, 9, 4.88m, 95, false,
+             "Dedicated to gentle pediatric atopic dermatitis care, barrier therapy, and rosacea restoration.",
+             "doc-salma-n.jpg", "SKIN BARRIER • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday]),
+            ("fouad.dermatologist@gmail.com", "Fouad", "Abdelaziz", "Male", "Dermatology",
+             "Immunodermatology & Trichology Consultant", "MD, PhD", "Clinic 212", 520, 170, 17, 4.85m, 107, false,
+             "Specializes in autoimmune blistering disorders, trichoscopy alopecia diagnostics, and patch testing.",
+             "doc-fouad.jpg", "IMMUNODERM • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("reem.dermatologist@gmail.com", "Reem", "El-Shenawy", "Female", "Dermatology",
+             "Digital Dermoscopy & Pigment Specialist", "MD, MSc", "Clinic 214", 470, 140, 8, 4.87m, 82, false,
+             "Uses polarized digital mole mapping for early pigment evaluation and sun-damage preservation.",
+             "doc-reem.jpg", "DERMOSCOPY • MANARA", [DayOfWeek.Wednesday, DayOfWeek.Thursday]),
+
+            // ── Pharmacy (5) ──
+            ("lamia.pharmacist@gmail.com", "Lamia", "El-Gamal", "Female", "Pharmacy",
+             "Chief Clinical Pharmacotherapy Specialist", "PharmD, BCPS", "Pharmacy Suite 1", 350, 100, 14, 4.92m, 121, true,
+             "Board-certified pharmacotherapy specialist reviewing polypharmacy regimens, drug-drug interactions, and chronic therapy optimization.",
+             "doc-mona-pharm.jpg", "PHARMACOTHERAPY • MANARA", [DayOfWeek.Sunday, DayOfWeek.Tuesday, DayOfWeek.Thursday]),
+            ("hazem.pharmacist@gmail.com", "Hazem", "El-Kady", "Male", "Pharmacy",
+             "Clinical Pharmacogenomics Specialist", "PharmD, PhD", "Pharmacy Suite 2", 380, 110, 11, 4.86m, 74, false,
+             "Matches cardiac, neuropsychiatric, and pain therapy dosages to individual metabolic profiles for maximum safety.",
+             "doc-hazem-pharm.jpg", "PHARMACOGENOMICS • MANARA", [DayOfWeek.Monday, DayOfWeek.Wednesday]),
+            ("nesma.pharmacist@gmail.com", "Nesma", "Reda", "Female", "Pharmacy",
+             "Anticoagulation & Oncology Pharmacist", "PharmD, BCOP", "Pharmacy Suite 3", 360, 110, 10, 4.89m, 88, false,
+             "Directs warfarin/DOAC INR clinics and supportive medication counseling for outpatient patients.",
+             "doc-nesma-pharm.jpg", "ANTICOAGULATION • MANARA", [DayOfWeek.Sunday, DayOfWeek.Wednesday]),
+            ("adel.pharmacist@gmail.com", "Adel", "El-Gendy", "Male", "Pharmacy",
+             "Antimicrobial Stewardship Pharmacist", "PharmD, BCIDP", "Pharmacy Suite 4", 350, 100, 13, 4.83m, 65, false,
+             "Coordinates targeted antibiotic regimens with Clinical Laboratory susceptibility profiles to preserve efficacy.",
+             "doc-adel-pharm.jpg", "STEWARDSHIP • MANARA", [DayOfWeek.Monday, DayOfWeek.Thursday]),
+            ("hend.pharmacist@gmail.com", "Hend", "Mostafa", "Female", "Pharmacy",
+             "Critical Care & Metabolic Pharmacist", "PharmD, BCCCP", "Pharmacy Suite 5", 370, 110, 12, 4.87m, 79, false,
+             "Provides inpatient therapeutic drug monitoring, insulin titration education, and discharge medication counseling.",
+             "doc-hend-pharm.jpg", "CLINICAL PHARMACY • MANARA", [DayOfWeek.Tuesday, DayOfWeek.Thursday])
         };
 
         var docIndex = 1;
@@ -850,6 +1071,10 @@ public sealed class DemoDataSeeder(
                     if (docDef.DeptName == "Radiology & Imaging")
                     {
                         await userManager.AddToRoleAsync(doc, Role.Radiologist.ToString());
+                    }
+                    if (docDef.DeptName == "Pharmacy")
+                    {
+                        await userManager.AddToRoleAsync(doc, Role.Pharmacist.ToString());
                     }
                 }
             }
@@ -991,5 +1216,298 @@ public sealed class DemoDataSeeder(
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
         }
+
+        // 7. Ensure Nadia Mahmoud (nadia.patient@gmail.com) has full multi-modal updates, released lab, PACS radiology, Rx, consultations, and reviews
+        if (nadiaPatient != null && firstCardiologist != null)
+        {
+            var labStaff = await userManager.FindByEmailAsync("hossam.labtech@gmail.com");
+            var radDoc = await userManager.FindByEmailAsync("amr.radiologist@gmail.com") ?? firstCardiologist;
+
+            var hasNadiaVisit = await dbContext.Appointments.AnyAsync(a => a.PatientID == nadiaPatient.Id, cancellationToken);
+            Encounter? nadiaEncounter = await dbContext.Encounters.FirstOrDefaultAsync(e => e.PatientId == nadiaPatient.Id, cancellationToken);
+
+            if (!hasNadiaVisit || nadiaEncounter is null)
+            {
+                var pastDate = DateTime.UtcNow.Date.AddDays(-3);
+                nadiaEncounter = new Encounter
+                {
+                    Number = $"ENC-MNR-{Random.Shared.Next(400, 799)}",
+                    PatientId = nadiaPatient.Id,
+                    DoctorId = firstCardiologist.Id,
+                    DepartmentId = firstCardiologist.DepartmentId,
+                    Type = EncounterType.Outpatient,
+                    Status = EncounterStatus.Signed,
+                    ChiefComplaint = "Seasonal bronchial tightness & preventive cardiac clearance",
+                    RegisteredAtUtc = pastDate.AddHours(11),
+                    TriagedAtUtc = pastDate.AddHours(11).AddMinutes(8),
+                    StartedAtUtc = pastDate.AddHours(11).AddMinutes(16),
+                    CompletedAtUtc = pastDate.AddHours(11).AddMinutes(45),
+                    SignedAtUtc = pastDate.AddHours(12),
+                    SignedByUserId = firstCardiologist.Id
+                };
+                nadiaEncounter.Diagnoses.Add(new Diagnosis
+                {
+                    Code = "J45.20",
+                    Description = "Mild intermittent bronchial reactivity — well controlled",
+                    Type = DiagnosisType.Primary,
+                    RecordedByUserId = firstCardiologist.Id,
+                    RecordedAtUtc = pastDate.AddHours(11).AddMinutes(30)
+                });
+                nadiaEncounter.Notes.Add(new ClinicalNote
+                {
+                    Content = "Oxygen saturation 99% on room air. Heart sounds S1/S2 normal with no murmur. Chest radiograph clear with zero focal infiltrate. Continue breathing hygiene and schedule 10-day review.",
+                    AuthorUserId = firstCardiologist.Id,
+                    AuthorRole = Role.Doctor.ToString(),
+                    Status = NoteStatus.Signed,
+                    CreatedAtUtc = pastDate.AddHours(11).AddMinutes(35),
+                    SignedAtUtc = pastDate.AddHours(12),
+                    SignedByUserId = firstCardiologist.Id
+                });
+                dbContext.Encounters.Add(nadiaEncounter);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                dbContext.Appointments.Add(new Appointment
+                {
+                    Number = $"APT-MNR-{Random.Shared.Next(400, 799)}",
+                    AppointmentDate = pastDate,
+                    SlotMinutes = 660,
+                    DurationMinutes = 30,
+                    Status = AppointStatus.Completed,
+                    PatientID = nadiaPatient.Id,
+                    DoctorID = firstCardiologist.Id,
+                    EncounterId = nadiaEncounter.Id,
+                    Notes = "Completed Cardiopulmonary Wellness Evaluation — Follow-Up Eligible",
+                    CreatedAtUtc = pastDate.AddDays(-2),
+                    CompletedAtUtc = pastDate.AddHours(12)
+                });
+
+                dbContext.Appointments.Add(new Appointment
+                {
+                    Number = $"APT-MNR-{Random.Shared.Next(800, 999)}",
+                    AppointmentDate = DateTime.UtcNow.Date.AddDays(4),
+                    SlotMinutes = 600,
+                    DurationMinutes = 30,
+                    Status = AppointStatus.Approved,
+                    PatientID = nadiaPatient.Id,
+                    DoctorID = firstCardiologist.Id,
+                    Notes = "Follow-Up Cardiopulmonary Check",
+                    CreatedAtUtc = DateTime.UtcNow.AddDays(-1)
+                });
+
+                var cbcTest = await dbContext.LabTests.FirstOrDefaultAsync(t => t.Code == "CBC", cancellationToken)
+                              ?? await dbContext.LabTests.FirstOrDefaultAsync(cancellationToken);
+                if (cbcTest is not null)
+                {
+                    dbContext.LabOrders.Add(new LabOrder
+                    {
+                        Number = $"LAB-MNR-{Random.Shared.Next(400, 799)}",
+                        PatientId = nadiaPatient.Id,
+                        EncounterId = nadiaEncounter.Id,
+                        OrderedByUserId = firstCardiologist.Id,
+                        ClinicalNotes = "Baseline Hematology Screening",
+                        Status = LabOrderStatus.Released,
+                        SpecimenId = $"SPC-MNR-{Random.Shared.Next(400, 799)}",
+                        CollectedAtUtc = pastDate.AddHours(12).AddMinutes(10),
+                        ReceivedAtUtc = pastDate.AddHours(12).AddMinutes(25),
+                        ReleasedAtUtc = pastDate.AddHours(15),
+                        ReleasedByUserId = labStaff?.Id ?? firstCardiologist.Id,
+                        CreatedAtUtc = pastDate.AddHours(11).AddMinutes(40),
+                        Items =
+                        [
+                            new LabOrderItem
+                            {
+                                LabTestId = cbcTest.Id,
+                                ResultValue = "7.4",
+                                NumericResult = 7.4m,
+                                ResultPrice = cbcTest.Price,
+                                Flag = DAL.Entities.Diagnostics.ResultFlag.Normal,
+                                EnteredByUserId = labStaff?.Id ?? firstCardiologist.Id,
+                                EnteredAtUtc = pastDate.AddHours(14),
+                                VerifiedByUserId = labStaff?.Id ?? firstCardiologist.Id,
+                                VerifiedAtUtc = pastDate.AddHours(15),
+                                Comment = "White cell count & haemoglobin strictly within healthy Alexandrian reference intervals."
+                            }
+                        ]
+                    });
+                }
+
+                dbContext.ImagingOrders.Add(new ImagingOrder
+                {
+                    Number = $"IMG-MNR-{Random.Shared.Next(400, 799)}",
+                    PatientId = nadiaPatient.Id,
+                    EncounterId = nadiaEncounter.Id,
+                    OrderedByUserId = firstCardiologist.Id,
+                    Modality = "Digital Chest X-Ray (PA View)",
+                    StudyName = "Chest Radiograph PA — Cardiopulmonary Screening",
+                    ClinicalIndication = "Seasonal cough baseline screening",
+                    Status = ImagingOrderStatus.Released,
+                    ScheduledForUtc = pastDate.AddHours(12).AddMinutes(15),
+                    PerformedAtUtc = pastDate.AddHours(12).AddMinutes(30),
+                    RadiologistUserId = radDoc.Id,
+                    VerifiedByUserId = radDoc.Id,
+                    VerifiedAtUtc = pastDate.AddHours(14),
+                    Findings = "Lungs are clear with symmetrical costophrenic angles. Cardiothoracic ratio normal (<0.48). No pleural effusion or consolidation.",
+                    Impression = "Normal Chest Radiograph. Cleared for progressive aerobic exercise.",
+                    CreatedAtUtc = pastDate.AddHours(11).AddMinutes(42)
+                });
+
+                var meds = await dbContext.Medications.Take(2).ToListAsync(cancellationToken);
+                if (meds.Count > 0)
+                {
+                    dbContext.Prescriptions.Add(new Prescription
+                    {
+                        Number = $"RX-MNR-{Random.Shared.Next(400, 799)}",
+                        EncounterId = nadiaEncounter.Id,
+                        PatientId = nadiaPatient.Id,
+                        PrescribedByUserId = firstCardiologist.Id,
+                        Status = PrescriptionStatus.Dispensed,
+                        DoctorInstructions = "Keep inhaler handy before chilly evening walks and complete 14-day airway support schedule.",
+                        NextFollowUpDate = DateTime.UtcNow.Date.AddDays(10),
+                        CreatedAtUtc = pastDate.AddHours(11).AddMinutes(45),
+                        Items = meds.Select((m, idx) => new PrescriptionItem
+                        {
+                            MedicationId = m.Id,
+                            Dose = idx == 0 ? "1 puff" : "1 tablet",
+                            Frequency = idx == 0 ? "As needed" : "Daily after lunch",
+                            Duration = "14 days",
+                            Route = idx == 0 ? "Inhalation" : "Oral",
+                            Quantity = 14,
+                            DispensedQuantity = 14,
+                            Instructions = "Follow MANARA pharmacist leaflet",
+                            IntakeSchedule = idx == 0 ? "PRN before exercise" : "01:30 PM after lunch"
+                        }).ToList()
+                    });
+                }
+
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            if (!await dbContext.ConsultationInquiries.AnyAsync(cancellationToken))
+            {
+                dbContext.ConsultationInquiries.AddRange(
+                    new ConsultationInquiry
+                    {
+                        PatientUserId = nadiaPatient.Id,
+                        PatientId = null,
+                        PatientName = "Nadia Mahmoud",
+                        PatientEmail = "nadia.patient@gmail.com",
+                        DepartmentId = firstCardiologist.DepartmentId,
+                        DoctorId = null,
+                        Subject = "Safe jogging pace after chest radiograph clearance",
+                        Question = "Thank you Dr. Salma — since my Chest X-Ray came back normal, can I resume light morning jogging along the Corniche this week?",
+                        Status = "Answered",
+                        DoctorReply = "Yes Nadia! Your PA chest study and CBC parameters are completely normal. Start with 20 minutes of moderate brisk walking for 3 days before resuming gentle jogging, and keep hydrated.",
+                        RepliedByUserId = firstCardiologist.Id,
+                        RepliedByName = "Dr. Salma El-Sayed",
+                        RepliedAt = DateTime.UtcNow.AddHours(-6),
+                        PatientNotifiedByEmail = true,
+                        IsReadByPatient = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
+                    },
+                    new ConsultationInquiry
+                    {
+                        PatientUserId = ahmedPatient?.Id,
+                        PatientName = "Ahmed Hassan",
+                        PatientEmail = "ahmed.patient@gmail.com",
+                        DepartmentId = firstCardiologist.DepartmentId,
+                        Subject = "Home blood pressure evening timing",
+                        Question = "Should I log my evening blood pressure before dinner or 1 hour after taking my evening tablet?",
+                        Status = "Pending",
+                        CreatedAt = DateTime.UtcNow.AddHours(-3)
+                    });
+            }
+
+            if (!await dbContext.EmailNotificationLogs.AnyAsync(n => n.RecipientUserId == nadiaPatient.Id, cancellationToken))
+            {
+                dbContext.EmailNotificationLogs.AddRange(
+                    new EmailNotificationLog
+                    {
+                        RecipientUserId = nadiaPatient.Id,
+                        RecipientEmail = nadiaPatient.Email!,
+                        RecipientName = "Nadia Mahmoud",
+                        Category = "LabResult",
+                        Subject = "Laboratory Panel Verified & Released (CBC)",
+                        BodySummary = "Dr. Laila Kamel verified your Complete Blood Count result (7.4 10^9/L — Within Normal Reference Range).",
+                        ActionUrl = "/Updates",
+                        DeliveryStatus = "In-App & Ready",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.AddHours(-18)
+                    },
+                    new EmailNotificationLog
+                    {
+                        RecipientUserId = nadiaPatient.Id,
+                        RecipientEmail = nadiaPatient.Email!,
+                        RecipientName = "Nadia Mahmoud",
+                        Category = "RadiologyResult",
+                        Subject = "Radiology PACS Report Released — Chest X-Ray PA",
+                        BodySummary = "Dr. Amr Fouad released your Chest Radiograph PA report: Normal cardiopulmonary silhouette, clear lung fields.",
+                        ActionUrl = "/Updates",
+                        DeliveryStatus = "In-App & Ready",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.AddHours(-16)
+                    },
+                    new EmailNotificationLog
+                    {
+                        RecipientUserId = nadiaPatient.Id,
+                        RecipientEmail = nadiaPatient.Email!,
+                        RecipientName = "Nadia Mahmoud",
+                        Category = "ConsultationReply",
+                        Subject = "Dr. Salma El-Sayed replied to your consultation",
+                        BodySummary = "New clinical response regarding safe jogging clearance along the Corniche.",
+                        ActionUrl = "/Updates",
+                        DeliveryStatus = "In-App & Ready",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.AddHours(-6)
+                    });
+            }
+        }
+
+        if (!await dbContext.PlatformFeedbacks.AnyAsync(cancellationToken))
+        {
+            dbContext.PlatformFeedbacks.AddRange(
+                new PlatformFeedback
+                {
+                    UserId = nadiaPatient?.Id,
+                    AuthorName = "Nadia Mahmoud",
+                    AuthorEmail = "nadia.patient@gmail.com",
+                    Category = "Review",
+                    TargetScope = "Doctor",
+                    TargetName = "Dr. Salma El-Sayed · Cardiology",
+                    Rating = 5,
+                    Subject = "Exceptional serenity & same-day PACS clarity",
+                    Message = "From the tranquil reception pavilion to receiving my verified Chest X-Ray notes in My Updates the same afternoon, MANARA feels unlike any clinic in Alexandria.",
+                    Status = "Reviewed",
+                    ReviewedAt = DateTime.UtcNow.AddDays(-2),
+                    CreatedAt = DateTime.UtcNow.AddDays(-2)
+                },
+                new PlatformFeedback
+                {
+                    AuthorName = "Tariq Ziad",
+                    AuthorEmail = "tariq.ziad@gmail.com",
+                    Category = "Review",
+                    TargetScope = "Hospital",
+                    TargetName = "MANARA Medical Complex",
+                    Rating = 5,
+                    Subject = "Zero wait congestion & spotless diagnostic wing",
+                    Message = "Check-in took less than two minutes and our family pediatrician explained every growth milestone patiently.",
+                    Status = "Reviewed",
+                    ReviewedAt = DateTime.UtcNow.AddDays(-4),
+                    CreatedAt = DateTime.UtcNow.AddDays(-4)
+                },
+                new PlatformFeedback
+                {
+                    AuthorName = "LaylaMansour",
+                    AuthorEmail = "layla.m@gmail.com",
+                    Category = "Suggestion",
+                    TargetScope = "Department",
+                    TargetName = "Clinical Laboratory",
+                    Subject = "Early Friday fasting blood draw slot",
+                    Message = "Adding a 7:30 AM Saturday early fasting phlebotomy hour would help working professionals complete panels before office hours.",
+                    Status = "New",
+                    CreatedAt = DateTime.UtcNow.AddHours(-12)
+                });
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

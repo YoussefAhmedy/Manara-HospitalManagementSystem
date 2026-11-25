@@ -14,7 +14,7 @@ namespace Hospital.BLL.ModelVM
             [Required(ErrorMessage = "your first name is required")]
             [MaxLength(20, ErrorMessage = "must be less than 21")]
             [MinLength(3, ErrorMessage = " must be greater than 2")]
-            [Display(Name = "Frist name")]
+            [Display(Name = "First Name")]
             public string FirstName { get; set; }
 
 

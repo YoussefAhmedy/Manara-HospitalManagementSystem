@@ -30,6 +30,18 @@ public sealed class SettingsVm
     public string? NewPassword { get; set; }
     public string? ConfirmNewPassword { get; set; }
     public IReadOnlyList<string> Roles { get; set; } = [];
+    public bool UseWorkspaceLayout { get; set; }
+
+    // Notification preferences
+    public bool EmailNotifyLabs { get; set; } = true;
+    public bool EmailNotifyPrescriptions { get; set; } = true;
+    public bool EmailNotifyAppointments { get; set; } = true;
+    public bool EmailNotifyReplies { get; set; } = true;
+
+    // Accessibility preferences
+    public string UiFontSize { get; set; } = "default";
+    public string UiDensity { get; set; } = "comfortable";
+    public bool UiReducedMotion { get; set; }
 }
 
 public sealed class PatientMyCareVm

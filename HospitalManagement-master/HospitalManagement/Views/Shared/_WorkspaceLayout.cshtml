@@ -51,6 +51,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <title>@title — MANARA Workspace</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="alternate icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -190,6 +192,10 @@
                         <partial name="_Icon" model="@("shield")" />
                         <span>Audit Log &amp; RBAC</span>
                     </a>
+                    <a class="ws-nav-btn @(IsAct("Consult", "Manage") ? "active" : "")" asp-controller="Consult" asp-action="Manage">
+                        <partial name="_Icon" model="@("message")" />
+                        <span>Feedback &amp; Concerns</span>
+                    </a>
                 }
             </div>
 
@@ -203,7 +209,7 @@
                     </div>
                 </div>
                 <div class="ws-foot-actions">
-                    <a class="ws-foot-btn" asp-controller="Account" asp-action="Settings">
+                    <a class="ws-foot-btn" asp-controller="Account" asp-action="Settings" asp-route-ctx="ws">
                         <partial name="_Icon" model="@("settings")" />
                         <span>Settings</span>
                     </a>

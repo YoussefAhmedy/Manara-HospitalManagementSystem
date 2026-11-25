@@ -17,12 +17,11 @@
 
 <div class="ws-header">
     <div>
-        <span class="pill-tag">Hospital Command &bull; Live Intelligence</span>
         <h1 class="ws-title">Operations Overview</h1>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <a class="btn btn-primary btn-sm" asp-controller="Appointments" asp-action="Index">+ Schedule Visit</a>
-        <a class="btn btn-sm" asp-controller="Patients" asp-action="Index">+ Register Patient</a>
+        <a class="btn btn-sm" asp-controller="Appointments" asp-action="Index">Full Bookings Ledger</a>
+        <a class="btn btn-primary btn-sm" asp-controller="Patients" asp-action="Index">+ Register Patient</a>
     </div>
 </div>
 
@@ -193,5 +192,65 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- Hospital-Wide Bookings & Schedule Ledger -->
+@{
+    var ledger = ViewBag.BookingsLedger as IReadOnlyList<HospitalManagement.Controllers.DashboardBookingItem>
+                 ?? Array.Empty<HospitalManagement.Controllers.DashboardBookingItem>();
+}
+<div class="panel" style="margin-top:20px;">
+    <div class="panel-head">
+        <div>
+            <div class="panel-title">Hospital Bookings &amp; Schedule Ledger</div>
+            <div style="font-size:12px;color:var(--ws-text-secondary);margin-top:2px;">Live patient reservations across all departments — Initial Consultations vs Returning Follow-Ups.</div>
+        </div>
+        <a class="btn btn-sm" asp-controller="Appointments" asp-action="Index">Manage All Appointments</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Date &amp; Time</th>
+                    <th>Department</th>
+                    <th>Doctor</th>
+                    <th>Visit Type</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ledger.Count == 0)
+                {
+                    <tr><td colspan="6" style="text-align:center;color:var(--ws-text-secondary);padding:20px;">No patient bookings recorded yet.</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in ledger)
+                    {
+                        var tone = Hospital.BLL.Common.StatusTone.Appointment(item.Status);
+                        var slotStr = item.SlotMinutes > 0
+                            ? DateTime.Today.AddMinutes(item.SlotMinutes).ToString("hh:mm tt")
+                            : "—";
+                        <tr>
+                            <td>
+                                <strong>@item.PatientName</strong>
+                                <div style="font-size:11px;color:var(--ws-text-secondary);">@item.Mrn &bull; @item.Number</div>
+                            </td>
+                            <td class="tabular">@item.Date.ToString("ddd, dd MMM yyyy") &bull; @slotStr</td>
+                            <td>@item.DepartmentName</td>
+                            <td>@item.DoctorName</td>
+                            <td>
+                                <span class="badge @(item.IsFollowUp ? "badge-teal" : "badge-navy")">
+                                    @(item.IsFollowUp ? "Follow-Up" : "Initial Visit")
+                                </span>
+                            </td>
+                            <td><partial name="_StatusBadge" model="tone" /></td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
 </div>

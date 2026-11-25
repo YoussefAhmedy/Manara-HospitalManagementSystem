@@ -2,9 +2,11 @@ using System.Security.Claims;
 using Hospital.BLL.Common;
 using Hospital.BLL.Permissions;
 using Hospital.BLL.Services.Abstraction;
+using Hospital.DAL.DataBase;
 using Hospital.DAL.Entities.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Hospital.BLL.Helpers;
 
 namespace HospitalManagement.Controllers;
@@ -16,7 +18,9 @@ namespace HospitalManagement.Controllers;
 [Authorize]
 public sealed class RadiologyController(
     IImagingService imaging,
-    IAuditLogger audit) : Controller
+    HospitalDbContext dbContext,
+    IAuditLogger audit,
+    IEmailNotificationService notifications) : Controller
 {
     private string CurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
@@ -130,6 +134,20 @@ public sealed class RadiologyController(
         else if (eventType is not null)
         {
             await audit.RecordAsync(eventType, CurrentUserId(), null, "ImagingOrder", id.ToString(), cancellationToken);
+            if (action == "release")
+            {
+                var order = await dbContext.ImagingOrders.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+                if (order is not null)
+                {
+                    await notifications.NotifyUserAsync(
+                        order.PatientId,
+                        "RadiologyResult",
+                        $"Radiology PACS Report Released ({order.Number})",
+                        $"Your verified {order.Modality} report ({order.StudyName}) is now available in My Updates.",
+                        "/Updates",
+                        cancellationToken);
+                }
+            }
             TempData["StatusMessage"] = "Imaging order updated.";
         }
 

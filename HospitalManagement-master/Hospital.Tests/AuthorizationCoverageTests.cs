@@ -55,7 +55,13 @@ public sealed class AuthorizationCoverageTests
         "AccountController.ForgetPassword",
         "AccountController.ResendPasswordReset",
         "AccountController.ResetConfirmation",
-        "AccountController.ResetPassword"
+        "AccountController.ResetPassword",
+
+        // Public Consultation / Medical Guidance Hub
+        "ConsultController.Index",
+        "ConsultController.SubmitQuestion",
+        "ConsultController.SubmitFeedback",
+        "ConsultController.AskAssistant"
     };
 
     private sealed record ActionRecord(

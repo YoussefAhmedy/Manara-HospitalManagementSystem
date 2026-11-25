@@ -13,7 +13,10 @@
 
 @section PageActions {
     <a class="btn" asp-action="Index" asp-route-date="@DateTime.UtcNow.ToString("yyyy-MM-dd")">Today</a>
-    <a class="btn btn--primary" asp-action="Book"><partial name="_Icon" model="@("plus")" /> Book appointment</a>
+    @if (ViewBag.IsDoctorScoped as bool? != true && canManage)
+    {
+        <a class="btn btn--primary" asp-action="Book"><partial name="_Icon" model="@("plus")" /> Assign Patient Slot</a>
+    }
 }
 
 <div class="kpi-grid" style="margin-bottom:var(--space-5)">

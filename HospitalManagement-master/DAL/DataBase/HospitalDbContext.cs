@@ -56,6 +56,9 @@ public class HospitalDbContext(DbContextOptions<HospitalDbContext> options)
     public DbSet<Admission> Admissions => Set<Admission>();
     public DbSet<BedAssignment> BedAssignments => Set<BedAssignment>();
     public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
+    public DbSet<ConsultationInquiry> ConsultationInquiries => Set<ConsultationInquiry>();
+    public DbSet<PlatformFeedback> PlatformFeedbacks => Set<PlatformFeedback>();
+    public DbSet<EmailNotificationLog> EmailNotificationLogs => Set<EmailNotificationLog>();
 
     // Billing
     public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();

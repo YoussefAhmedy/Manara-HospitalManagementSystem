@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Hospital.BLL.ModelVM;
 using Hospital.DAL.Entities;
 using System;
@@ -15,7 +15,9 @@ namespace Hospital.BLL.Mappers
         {
             CreateMap<RegisterViewModel, Patient>();
             CreateMap<RegisterViewModel, ApplicationUser>();
-            CreateMap<EditProfileVm, ApplicationUser>();
+            CreateMap<EditProfileVm, ApplicationUser>()
+                .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src =>
+                    src.DateOfBirth.HasValue && src.DateOfBirth.Value.Year > 1900 ? (DateTime?)src.DateOfBirth.Value.Date : null));
             CreateMap<CreateDoctorViewModel, Doctor>();
             CreateMap<Doctor, DoctorVm>();
             CreateMap<Admin, AdminVm>();
@@ -33,7 +35,9 @@ namespace Hospital.BLL.Mappers
             CreateMap<AddmedicalRecordVM, MedicalRecord>();
             CreateMap<MedicalRecord, AddmedicalRecordVM>();
             CreateMap<ApplicationUser, RegisterViewModel>();
-            CreateMap<ApplicationUser, EditProfileVm>();
+            CreateMap<ApplicationUser, EditProfileVm>()
+                .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src =>
+                    src.DateOfBirth.HasValue && src.DateOfBirth.Value.Year > 1900 ? src.DateOfBirth : null));
             CreateMap<Patient, EditPatientVm>();
             CreateMap<DoctorVm, Doctor>();
             CreateMap<AdminVm, Admin>();

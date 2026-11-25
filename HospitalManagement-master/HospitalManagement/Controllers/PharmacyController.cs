@@ -17,7 +17,8 @@ public sealed class PharmacyController(
     IPharmacyService pharmacy,
     IWorkspaceService workspace,
     HospitalDbContext dbContext,
-    IAuditLogger audit) : Controller
+    IAuditLogger audit,
+    IEmailNotificationService notifications) : Controller
 {
     private string CurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
@@ -121,6 +122,13 @@ public sealed class PharmacyController(
         else
         {
             await audit.RecordAsync("prescription.create", CurrentUserId(), null, "Prescription", result.Value!.Id.ToString(), cancellationToken);
+            await notifications.NotifyUserAsync(
+                result.Value.PatientId,
+                "Prescription",
+                $"New Prescription Issued ({result.Value.Number})",
+                "Your clinician has issued a new prescription with dosing instructions. View your schedule in My Updates.",
+                "/Updates",
+                cancellationToken);
             TempData["StatusMessage"] = $"Prescription {result.Value.Number} issued and sent to pharmacy.";
         }
 

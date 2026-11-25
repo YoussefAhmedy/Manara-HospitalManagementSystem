@@ -1,0 +1,27 @@
+# IDE & Editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build & Runtime Outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+artifacts/
+
+# Logs & Temp Files
+*.log
+*.tmp
+[Ll]og/
+[Ll]ogs/
+
+# Local Environment / Secrets
+.env
+.env.local
+*.Development.json.local

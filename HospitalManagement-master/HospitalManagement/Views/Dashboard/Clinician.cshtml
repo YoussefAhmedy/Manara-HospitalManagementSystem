@@ -1,47 +1,85 @@
+@using HospitalManagement.Controllers
 @{
     var kpis = ViewBag.Kpis as IReadOnlyList<Hospital.BLL.Services.Abstraction.Kpi> ?? new List<Hospital.BLL.Services.Abstraction.Kpi>();
-    var queue = (Hospital.BLL.Services.Abstraction.DepartmentQueue)ViewBag.Queue;
+    var bookings = ViewBag.DoctorBookings as IReadOnlyList<DashboardBookingItem> ?? Array.Empty<DashboardBookingItem>();
+    var todayBookings = bookings.Count(b => b.Date.Date == DateTime.UtcNow.Date);
+    var followUpCount = bookings.Count(b => b.IsFollowUp);
 }
+
+<div class="ws-header">
+    <div>
+        <h1 class="ws-title">Physician Clinic Overview</h1>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-sm" asp-controller="Encounters" asp-action="Index">Encounter Queue</a>
+        <a class="btn btn-sm" asp-controller="Updates" asp-action="Index">Patient Q&amp;A Inbox</a>
+    </div>
+</div>
 
 <partial name="_KpiGrid" model="kpis" />
 
 <div class="split-grid">
-    <section class="card card--flush" aria-labelledby="queue-heading">
-        <div class="card__header">
+    <section class="panel" aria-labelledby="queue-heading">
+        <div class="panel-head">
             <div>
-                <h2 class="card__title" id="queue-heading">Today's clinic list</h2>
-                <p class="card__subtitle">@queue.CheckedIn checked in · @queue.Waiting confirmed · @queue.Confirmed awaiting confirmation</p>
+                <h2 class="panel-title" id="queue-heading">Your Scheduled Patient Bookings</h2>
+                <p style="font-size:12px;color:var(--ws-text-secondary);margin:2px 0 0;">
+                    Strictly patients booked with you (@bookings.Count total &bull; @todayBookings today &bull; @followUpCount follow-ups).
+                </p>
             </div>
-            <a class="link" asp-controller="Appointments" asp-action="Index">Open scheduler</a>
         </div>
-        @if (queue.Next.Count == 0)
+        @if (bookings.Count == 0)
         {
-            <partial name="_EmptyState" model="@(("No patients waiting", "Checked-in patients appear here as reception moves them through the clinic.", "inbox"))" />
+            <partial name="_EmptyState" model="@(("No patients scheduled", "Patients booking consultations with you appear directly in this schedule.", "calendar"))" />
         }
         else
         {
             <div class="table-wrap">
-                <table class="table table--compact">
+                <table>
                     <thead>
                         <tr>
-                            <th scope="col">Time</th>
-                            <th scope="col">Patient</th>
-                            <th scope="col">MRN</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="actions">Action</th>
+                            <th>Date &amp; Time</th>
+                            <th>Patient</th>
+                            <th>Visit &amp; Reason</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Clinical Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in queue.Next)
+                        @foreach (var item in bookings)
                         {
                             var status = Hospital.BLL.Common.StatusTone.Appointment(item.Status);
+                            var slotStr = item.SlotMinutes > 0
+                                ? DateTime.Today.AddMinutes(item.SlotMinutes).ToString("hh:mm tt")
+                                : "—";
                             <tr>
-                                <td class="mono nowrap">@(item.SlotMinutes <= 0 ? "—" : $"{item.SlotMinutes / 60:00}:{item.SlotMinutes % 60:00}")</td>
-                                <td class="strong">@item.PatientName</td>
-                                <td class="mono">@item.Mrn</td>
+                                <td class="tabular">
+                                    <strong>@item.Date.ToString("ddd, dd MMM")</strong>
+                                    <div style="font-size:11px;color:var(--ws-text-secondary);">@slotStr</div>
+                                </td>
+                                <td>
+                                    <strong>@item.PatientName</strong>
+                                    <div style="font-size:11px;color:var(--ws-text-secondary);">@item.Mrn &bull; @item.Number</div>
+                                </td>
+                                <td>
+                                    <span class="badge @(item.IsFollowUp ? "badge-teal" : "badge-navy")" style="margin-bottom:4px;">
+                                        @(item.IsFollowUp ? "Follow-Up" : "Initial Consult")
+                                    </span>
+                                    <div style="font-size:11.5px;color:var(--ws-text-secondary);max-width:220px;">
+                                        @(string.IsNullOrWhiteSpace(item.Notes) ? "Routine specialist consultation" : item.Notes)
+                                    </div>
+                                </td>
                                 <td><partial name="_StatusBadge" model="status" /></td>
-                                <td class="actions">
-                                    <a class="btn btn--sm" asp-controller="Encounters" asp-action="Index" asp-route-status="Triaged">Open encounter</a>
+                                <td style="text-align:right;white-space:nowrap;">
+                                    @if (item.EncounterId.HasValue)
+                                    {
+                                        <a class="btn btn-primary btn-sm" asp-controller="Encounters" asp-action="Details" asp-route-id="@item.EncounterId">Open Encounter</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-sm" asp-controller="Encounters" asp-action="Index">Encounters</a>
+                                    }
+                                    <a class="btn btn-sm" asp-controller="Pharmacy" asp-action="Index">Rx</a>
                                 </td>
                             </tr>
                         }
@@ -52,25 +90,24 @@
     </section>
 
     <div class="stack">
-        <section class="card" aria-labelledby="clinician-actions">
-            <div class="card__header"><h2 class="card__title" id="clinician-actions">Clinical actions</h2></div>
-            <div class="card__body">
-                <div class="stack" style="gap:var(--space-2)">
-                    <a class="btn btn--primary btn--block" asp-controller="Encounters" asp-action="Index">Open encounter queue</a>
-                    <a class="btn btn--block" asp-controller="Laboratory" asp-action="Index">Review laboratory results</a>
-                    <a class="btn btn--block" asp-controller="Pharmacy" asp-action="Index">Prescription review</a>
-                    <a class="btn btn--block" asp-controller="Reports" asp-action="Index">Clinical reports</a>
+        <section class="panel" aria-labelledby="clinician-actions">
+            <div class="panel-head"><h2 class="panel-title" id="clinician-actions">Clinical Workspace</h2></div>
+            <div class="panel-body">
+                <div class="stack" style="gap:10px;">
+                    <a class="btn btn-primary" asp-controller="Encounters" asp-action="Index">Open Encounter &amp; Notes</a>
+                    <a class="btn" asp-controller="Laboratory" asp-action="Index">Review Laboratory Results</a>
+                    <a class="btn" asp-controller="Radiology" asp-action="Index">Radiology &amp; PACS Studies</a>
+                    <a class="btn" asp-controller="Pharmacy" asp-action="Index">Prescriptions &amp; Intake Schedules</a>
+                    <a class="btn" asp-controller="Reports" asp-action="Index">Clinical Reports &amp; Recovery</a>
                 </div>
             </div>
         </section>
 
-        <section class="card" aria-labelledby="clinical-note">
-            <div class="card__header"><h2 class="card__title" id="clinical-note">Documentation discipline</h2></div>
-            <div class="card__body">
-                <p class="card__subtitle" style="margin:0">
-                    Encounters can only be signed once completed, with at least one recorded diagnosis and one signed
-                    clinical note. Signed encounters are immutable; corrections are recorded as amendments and keep
-                    the original entry visible.
+        <section class="panel" aria-labelledby="clinical-note">
+            <div class="panel-head"><h2 class="panel-title" id="clinical-note">Documentation Discipline</h2></div>
+            <div class="panel-body">
+                <p style="font-size:12.5px;color:var(--ws-text-secondary);margin:0;line-height:1.6;">
+                    Encounters can only be signed once completed with at least one diagnosis and clinical note. Signed encounters notify the patient immediately inside <strong>My Updates</strong> and unlock reduced follow-up rates.
                 </p>
             </div>
         </section>

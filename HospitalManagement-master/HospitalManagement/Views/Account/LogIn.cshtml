@@ -1,133 +1,199 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @model Hospital.BLL.ModelVM.LogInViewModel
 @{
-    ViewData["Title"] = "Sign In";
-    ViewData["Description"] = "Sign in or create a patient account at MANARA Medical Complex.";
+    Layout = null;
+    ViewData["Title"] = "Sign In — MANARA Medical Complex";
 }
-
-<section class="auth-dark-shell">
-    <div class="auth-dark-card">
-        <div class="auth-dark-brand">
-            <div class="auth-dark-logo">
-                <partial name="_ManaraLogo" model="26" />
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="alternate icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
+</head>
+<body class="auth-split-body">
+    <main class="auth-split-shell">
+        <!-- Curved Royal Blue Identity & Sanctuary Stage (Left) -->
+        <section class="auth-split-left" aria-label="MANARA Sanctuary Visual">
+            <canvas class="auth-pixel-canvas" id="authPixelCanvas" aria-hidden="true"></canvas>
+            <a class="auth-split-brand" asp-controller="Home" asp-action="Index">
+                <partial name="_ManaraLogo" model="28" />
                 <span>MANARA</span>
-            </div>
-            <h1 class="auth-dark-title">Log in to your account</h1>
-            <p class="auth-dark-sub">Access your medical care, appointments, or clinical workspace</p>
-        </div>
+            </a>
 
-        <div class="auth-tabs" role="tablist">
-            <button type="button" class="auth-tab-btn active" id="tabLoginBtn" role="tab" aria-selected="true">Log In</button>
-            <button type="button" class="auth-tab-btn" id="tabRegBtn" role="tab" aria-selected="false">Create Account</button>
-        </div>
-
-        @if (TempData["StatusMessage"] is string statusMsg)
-        {
-            <div class="notice notice--success" style="margin-bottom:16px;padding:10px 12px;border-radius:8px;font-size:12px;">
-                <span>@statusMsg</span>
-            </div>
-        }
-        @if (TempData["ErrorMessage"] is string errMsg)
-        {
-            <div class="notice notice--warning" style="margin-bottom:16px;padding:10px 12px;border-radius:8px;font-size:12px;">
-                <span>@errMsg</span>
-            </div>
-        }
-
-        <!-- Sign In Form -->
-        <div id="loginFormPane">
-            <form asp-action="LogIn" asp-controller="Account" method="post" id="loginForm" class="form-grid">
-                <input type="hidden" asp-for="ReturnUrl" />
-                <div asp-validation-summary="All" class="validation-summary-errors form-field full" role="alert" style="color:var(--danger);font-size:12px;"></div>
-
-                <div class="form-field full">
-                    <label class="form-label" asp-for="Email">Email</label>
-                    <input class="auth-dark-input" asp-for="Email" id="loginEmailInput" type="email" placeholder="Email or username" autocomplete="username" inputmode="email" required value="" />
-                    <span asp-validation-for="Email" class="field-validation-error" style="font-size:11.5px;"></span>
-                </div>
-
-                <div class="form-field full">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                        <label class="form-label" asp-for="Password" style="margin:0;">Password</label>
-                        <a asp-controller="Account" asp-action="ForgetPassword" style="font-size:11.5px;color:var(--slate-light);text-decoration:none;">Forgot password?</a>
+            <div class="auth-split-visual">
+                <div class="auth-pill-marquee" aria-hidden="true">
+                    <div class="auth-pill-track">
+                        <span class="auth-motion-pill">Cardiology &bull; 3T PACS</span>
+                        <span class="auth-motion-pill amber">24/7 Lab Verification Gate</span>
+                        <span class="auth-motion-pill">@(ViewBag.SpecialistCount ?? 45) Attending Specialists</span>
+                        <span class="auth-motion-pill amber">Alexandrian Sanctuary</span>
+                        <span class="auth-motion-pill">Cardiology &bull; 3T PACS</span>
+                        <span class="auth-motion-pill amber">24/7 Lab Verification Gate</span>
+                        <span class="auth-motion-pill">@(ViewBag.SpecialistCount ?? 45) Attending Specialists</span>
+                        <span class="auth-motion-pill amber">Alexandrian Sanctuary</span>
                     </div>
-                    <div class="pw-wrap">
-                        <input class="auth-dark-input" asp-for="Password" id="loginPassInput" type="password" placeholder="Enter your password" autocomplete="current-password" required value="" style="padding-right:56px;" />
-                        <button type="button" class="pw-toggle" id="togglePwBtn" style="color:var(--slate-light);">Show</button>
+                </div>
+
+                <div class="auth-cutout-arch">
+                    <img class="auth-cutout-img" src="@Url.Content("~/assets/manara/sanctuary-2.jpg")" alt="MANARA Medical Complex Sanctuary Pavilion" />
+                </div>
+
+                <div class="auth-cutout-caption">
+                    <div class="auth-cutout-title">Serene Clinical Precision</div>
+                    <div class="auth-cutout-sub">Unified consultations, released diagnostic sheets, prescriptions, and direct physician updates in one peaceful portal.</div>
+                </div>
+
+                <div class="auth-pill-marquee" aria-hidden="true">
+                    <div class="auth-pill-track reverse">
+                        <span class="auth-motion-pill amber">Follow-Up Discounts</span>
+                        <span class="auth-motion-pill">Real-Time Updates Inbox</span>
+                        <span class="auth-motion-pill">Digital Rx &amp; Intake Schedule</span>
+                        <span class="auth-motion-pill amber">Instant Care Triage</span>
+                        <span class="auth-motion-pill amber">Follow-Up Discounts</span>
+                        <span class="auth-motion-pill">Real-Time Updates Inbox</span>
+                        <span class="auth-motion-pill">Digital Rx &amp; Intake Schedule</span>
+                        <span class="auth-motion-pill amber">Instant Care Triage</span>
                     </div>
-                    <span asp-validation-for="Password" class="field-validation-error" style="font-size:11.5px;"></span>
+                </div>
+            </div>
+
+            <div class="auth-split-copyright">
+                &copy; @DateTime.UtcNow.Year MANARA Medical Complex &bull; Alexandria, Egypt
+            </div>
+        </section>
+
+        <!-- Crisp White Split-Screen Auth Panel (Right) -->
+        <section class="auth-split-right" aria-label="Sign In Form">
+            <div class="auth-light-card">
+                <div class="auth-light-kicker">Patient &amp; Clinical Portal</div>
+                <h1 class="auth-light-title">Welcome to MANARA</h1>
+                <p class="auth-light-sub">Sign in to inspect released test results, appointments, or your clinical workspace.</p>
+
+                <div class="auth-light-tabs" role="tablist">
+                    <button type="button" class="auth-light-tab-btn active" id="tabLoginBtn" role="tab" aria-selected="true">Log In</button>
+                    <button type="button" class="auth-light-tab-btn" id="tabRegBtn" role="tab" aria-selected="false">Create Account</button>
                 </div>
 
-                <div class="form-field full" style="display:flex;align-items:center;gap:8px;margin-top:2px;">
-                    <input type="checkbox" asp-for="RememberMe" id="rememberMeInput" />
-                    <label for="rememberMeInput" style="font-size:12px;color:var(--slate-light);cursor:pointer;margin:0;">Keep me signed in</label>
-                </div>
-
-                <div class="form-field full" style="margin-top:6px;">
-                    <button type="submit" class="auth-orchid-btn" id="submitLoginBtn">Log in</button>
-                </div>
-
-                @if (Model?.ExternalLogins?.Any(scheme => scheme.Name == "Google") == true)
+                @if (TempData["StatusMessage"] is string statusMsg)
                 {
-                    <div class="form-field full">
-                        <div class="auth-or-divider">OR</div>
-                        <a class="auth-oauth-btn" asp-controller="Account" asp-action="GoogleAuth" asp-route-returnUrl="@Model.ReturnUrl">
-                            Continue with Google
-                        </a>
-                    </div>
+                    <div class="auth-light-alert" role="status">@statusMsg</div>
                 }
-            </form>
-        </div>
+                @if (TempData["ErrorMessage"] is string errMsg)
+                {
+                    <div class="auth-light-alert error" role="alert">@errMsg</div>
+                }
 
-        <!-- Patient Registration Form -->
-        <div id="registerFormPane" style="display:none;">
-            <form asp-action="Register" asp-controller="Account" method="post" id="registerForm" class="form-grid">
-                <div class="form-field">
-                    <label class="form-label">First Name *</label>
-                    <input class="auth-dark-input" name="FirstName" placeholder="e.g. Ahmed" required />
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Last Name *</label>
-                    <input class="auth-dark-input" name="LastName" placeholder="e.g. Hassan" required />
-                </div>
-                <div class="form-field full">
-                    <label class="form-label">Email Address *</label>
-                    <input class="auth-dark-input" type="email" name="Email" placeholder="name@gmail.com" required />
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Phone Number *</label>
-                    <input class="auth-dark-input" type="tel" name="PhoneNumber" placeholder="01012345678" required />
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Gender *</label>
-                    <select class="auth-dark-select" name="Gender" required>
-                        <option value="">Select</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
-                <div class="form-field full">
-                    <label class="form-label">Date of Birth *</label>
-                    <input class="auth-dark-input" type="date" name="DateOfBirth" value="1990-01-01" required />
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Password *</label>
-                    <input class="auth-dark-input" type="password" name="Password" placeholder="Min. 6 characters" required />
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Confirm *</label>
-                    <input class="auth-dark-input" type="password" name="ConfirmedPassword" placeholder="Repeat password" required />
-                </div>
-                <div class="form-field full" style="margin-top:6px;">
-                    <button type="submit" class="auth-orchid-btn">Create Patient Account</button>
-                </div>
-                <div class="form-field full" style="text-align:center;margin-top:4px;">
-                    <span style="font-size:11.5px;color:var(--slate-light);">Doctor or Staff accounts are provisioned by the Hospital Manager.</span>
-                </div>
-            </form>
-        </div>
-    </div>
-</section>
+                <div id="loginFormPane">
+                    <form asp-action="LogIn" asp-controller="Account" method="post" id="loginForm" class="form-grid">
+                        <input type="hidden" asp-for="ReturnUrl" />
 
-@section Scripts {
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div asp-validation-summary="All" class="auth-light-alert error form-field full" role="alert"></div>
+                        }
+
+                        <div class="form-field full">
+                            <label class="form-label" asp-for="Email">Email Address</label>
+                            <input class="auth-light-input" asp-for="Email" id="loginEmailInput" type="email" placeholder="name@gmail.com" autocomplete="username" inputmode="email" required value="" />
+                            <span asp-validation-for="Email" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-field full">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <label class="form-label" asp-for="Password" style="margin:0;">Password</label>
+                                <a asp-controller="Account" asp-action="ForgetPassword" style="font-size:12px;color:var(--teal);font-weight:600;text-decoration:none;">Forgot password?</a>
+                            </div>
+                            <div class="auth-light-pw-wrap">
+                                <input class="auth-light-input" asp-for="Password" id="loginPassInput" type="password" placeholder="Enter your password" autocomplete="current-password" required value="" />
+                                <button type="button" class="auth-light-pw-toggle" id="togglePwBtn">Show</button>
+                            </div>
+                            <span asp-validation-for="Password" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-field full auth-remember-row">
+                            <input type="checkbox" asp-for="RememberMe" id="rememberMeInput" />
+                            <label for="rememberMeInput">Keep me signed in</label>
+                        </div>
+
+                        <div class="form-field full">
+                            <button type="submit" class="auth-royal-btn" id="submitLoginBtn">Log In</button>
+                        </div>
+
+                        @if (Model?.ExternalLogins?.Any(scheme => scheme.Name == "Google") == true)
+                        {
+                            <div class="form-field full">
+                                <div class="auth-light-divider">OR</div>
+                                <a class="auth-light-oauth-btn" asp-controller="Account" asp-action="GoogleAuth" asp-route-returnUrl="@Model.ReturnUrl">
+                                    Continue with Google
+                                </a>
+                            </div>
+                        }
+                    </form>
+                </div>
+
+                <div id="registerFormPane" style="display:none;">
+                    <form asp-action="Register" asp-controller="Account" method="post" id="registerForm" class="form-grid">
+                        <div class="form-field">
+                            <label class="form-label">First Name *</label>
+                            <input class="auth-light-input" name="FirstName" placeholder="e.g. Nadia" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Last Name *</label>
+                            <input class="auth-light-input" name="LastName" placeholder="e.g. Mahmoud" required />
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label">Email Address *</label>
+                            <input class="auth-light-input" type="email" name="Email" placeholder="name@gmail.com" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Phone Number *</label>
+                            <input class="auth-light-input" type="tel" name="PhoneNumber" placeholder="+20 100 555 0100" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Gender *</label>
+                            <select class="auth-light-select" name="Gender" required>
+                                <option value="">Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-field full">
+                            <label class="form-label" for="loginRegDob">Date of Birth *</label>
+                            <div class="auth-date-row">
+                                <input class="auth-light-input" id="loginRegDob" type="date" name="DateOfBirth" placeholder="dd/mm/yyyy" required />
+                                <button type="button" class="auth-date-clear" data-clear-date="loginRegDob" aria-label="Clear Date of Birth" title="Clear date">&times; Clear</button>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Password *</label>
+                            <input class="auth-light-input" type="password" name="Password" placeholder="Min. 6 characters" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label">Confirm Password *</label>
+                            <input class="auth-light-input" type="password" name="ConfirmedPassword" placeholder="Repeat password" required />
+                        </div>
+                        <div class="form-field full" style="margin-top:6px;">
+                            <button type="submit" class="auth-royal-btn">Create Patient Account</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="auth-light-footer-link">
+                    <a asp-controller="Home" asp-action="Index">&larr; Return to MANARA Medical Complex Website</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/js/manara-ui.js" asp-append-version="true"></script>
     <partial name="_ValidationScriptsPartial" />
-}
+</body>
+</html>

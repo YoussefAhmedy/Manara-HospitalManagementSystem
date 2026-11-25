@@ -4,6 +4,7 @@ namespace Hospital.BLL.ModelVM;
 public sealed class PublicDoctorVm
 {
     public string Id { get; init; } = string.Empty;
+    public int? DepartmentId { get; init; }
     public string FirstName { get; init; } = string.Empty;
     public string LastName { get; init; } = string.Empty;
     public string? SpecializationName { get; init; }

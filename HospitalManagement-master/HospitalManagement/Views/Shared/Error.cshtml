@@ -1,15 +1,25 @@
 @{
-    ViewData["Title"] = "Something went wrong";
+    ViewData["Title"] = "Request Unavailable";
 }
-<section class="container section">
-    <div class="form-panel text-center">
-        <span class="eyebrow">Unexpected error</span>
-        <h1>We couldn’t complete that request.</h1>
-        <p class="auth-card__lead">Please try again. No clinical or account details are displayed on this page.</p>
-        @if (ViewData["RequestId"] is string requestId)
-        {
-            <p class="form-hint">Reference: <code>@requestId</code></p>
-        }
-        <a class="button button--primary" asp-controller="Home" asp-action="Index">Return home</a>
+
+<section class="manara-status-section" aria-labelledby="error-heading">
+    <div class="container">
+        <div class="manara-status-card">
+            <div class="manara-status-icon">
+                <partial name="_Icon" model="@("alert")" />
+            </div>
+            <h1 class="serif-display manara-status-title" id="error-heading">We couldn&rsquo;t complete that request</h1>
+            <p class="manara-status-lead">
+                The page may have moved or is temporarily unavailable. No clinical or personal information is exposed.
+            </p>
+            @if (ViewData["RequestId"] is string requestId)
+            {
+                <p class="manara-status-ref">Reference: <code>@requestId</code></p>
+            }
+            <div class="manara-status-actions">
+                <a class="btn btn-navy" asp-controller="Home" asp-action="Index">Go Back Home</a>
+                <a class="btn btn-outline" asp-controller="Home" asp-action="Support">Patient Support</a>
+            </div>
+        </div>
     </div>
 </section>

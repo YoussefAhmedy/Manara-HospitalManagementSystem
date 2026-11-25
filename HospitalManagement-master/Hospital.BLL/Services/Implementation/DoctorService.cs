@@ -26,7 +26,7 @@ namespace Hospital.BLL.Services.Implementation
 
         public List<PublicDoctorVm> GetPublicDoctorProfiles(int maximumResults)
         {
-            var take = Math.Clamp(maximumResults, 1, 32);
+            var take = Math.Clamp(maximumResults, 1, 200);
             return doctorRepository.GetPublicDoctors()
                 .OrderByDescending(doctor => doctor.IsTopRated)
                 .ThenByDescending(doctor => doctor.Rating)
@@ -35,6 +35,7 @@ namespace Hospital.BLL.Services.Implementation
                 .Select(doctor => new PublicDoctorVm
                 {
                     Id = doctor.Id,
+                    DepartmentId = doctor.DepartmentId,
                     FirstName = doctor.FirstName,
                     LastName = doctor.LastName,
                     SpecializationName = doctor.Specialization == null ? null : doctor.Specialization.Name,

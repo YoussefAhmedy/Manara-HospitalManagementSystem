@@ -6,36 +6,35 @@
     ViewData["Description"] = "MANARA Medical Complex — Timeless classical sanctuary heritage meets diagnostic and clinical excellence.";
 }
 
-<!-- MANARA Hero Section with Integrated Architectural Showcase Video -->
-<section class="manara-hero" id="manaraHeroSection" style="background-image:url('@Url.Content("~/assets/manara/hero-corridor.jpg")');">
-    <video id="manaraHeroVideo" class="hero-video-layer" poster="@Url.Content("~/assets/manara/hero-corridor.jpg")" playsinline preload="metadata" loop muted>
-        <source src="@Url.Content("~/videos/manara-complex.webm")" type="video/webm" />
-        <source src="@Url.Content("~/videos/manara-complex.mp4")" type="video/mp4" />
-    </video>
-
-    <h1 class="serif-display hero-headline">Your Journey To<br />Wellness Begins Here</h1>
-
-    <div class="hero-play-wrap">
-        <button type="button" class="hero-center-play" id="heroPlayBtn" title="Watch MANARA Sanctuary Film" aria-label="Watch MANARA Sanctuary Film">
-            <partial name="_Icon" model="@("play")" />
-        </button>
-        <span class="hero-play-caption">Tour MANARA Sanctuary</span>
+<!-- MANARA Hero Section: 60fps Auto-Playing Seamless Ambient Motion -->
+<section class="manara-hero manara-hero--ambient" id="manaraHeroSection">
+    <div class="hero-ambient-stage" aria-hidden="true">
+        <div class="hero-slide hero-slide-1"></div>
+        <div class="hero-slide hero-slide-2"></div>
+        <div class="hero-slide hero-slide-3"></div>
+        <div class="hero-slide hero-slide-4"></div>
+        <video id="manaraHeroVideo" class="hero-video-ambient" poster="@Url.Content("~/assets/manara/hero-corridor.jpg")" autoplay muted loop playsinline preload="auto">
+            <source src="@Url.Content("~/videos/manara-complex.webm")" type="video/webm" />
+            <source src="@Url.Content("~/videos/manara-complex.mp4")" type="video/mp4" />
+        </video>
+        <div class="hero-scrim-vignette"></div>
     </div>
 
-    <div>
-        <div class="hero-video-controls" role="group" aria-label="Showcase video controls">
-            <button type="button" class="hero-ctrl-btn" id="heroPauseToggle">Pause</button>
-            <button type="button" class="hero-ctrl-btn" id="heroMuteToggle">Unmute</button>
-            <button type="button" class="hero-ctrl-btn" id="heroCinemaBtn">Cinema View</button>
-            <button type="button" class="hero-ctrl-btn" id="heroStopBtn">Close</button>
+    <div class="hero-content-layer">
+        <div class="hero-editorial-kicker">
+            <span>Alexandrian Medical Sanctuary &bull; 3T PACS &amp; Dual-Verified Lab</span>
         </div>
 
-        <p class="hero-bottom-copy">
-            Alexandrian sanctuary tranquility, classical architectural grace, PACS 3T diagnostics, and compassionate specialist care — unified under one roof.
-        </p>
-        <div class="hero-cta-row">
-            <button type="button" class="btn btn-navy" data-book-modal="true">Book Consultation</button>
-            <a class="btn btn-outline" style="background:rgba(255,255,255,0.92);text-decoration:none;" asp-controller="Home" asp-action="Departments">Explore Departments</a>
+        <h1 class="serif-display hero-headline">Your Journey To<br />Wellness Begins Here</h1>
+
+        <div>
+            <p class="hero-bottom-copy">
+                Alexandrian sanctuary tranquility, classical architectural grace, PACS 3T diagnostics, and compassionate specialist care — unified under one roof.
+            </p>
+            <div class="hero-cta-row">
+                <button type="button" class="btn btn-navy" data-book-modal="true">Book Consultation</button>
+                <a class="btn btn-outline hero-explore-btn" asp-controller="Home" asp-action="Departments">Explore Departments</a>
+            </div>
         </div>
     </div>
 </section>
@@ -49,7 +48,7 @@
         <h2 class="serif-display mission-title">
             A luminous lighthouse of clinical precision — blending timeless coastal heritage with calm, evidence-driven multidisciplinary care.
         </h2>
-        <a class="pill-tag" style="cursor:pointer;text-decoration:none;" asp-controller="Home" asp-action="Doctors">Meet Our 16 Board-Certified Consultants</a>
+        <a class="editorial-kicker-link" asp-controller="Home" asp-action="Doctors">Meet Our @Model.Departments.Sum(d => d.Doctors.Count) Board-Certified Consultants &rarr;</a>
     </div>
 </section>
 
@@ -68,7 +67,7 @@
                 </div>
             </div>
             <div>
-                <span class="pill-tag">Our Philosophy</span>
+                <div class="editorial-kicker">Our Philosophy</div>
                 <h2 class="serif-display editorial-heading">Classical Serenity Meets Modern Medical Precision</h2>
                 <p style="color:var(--slate);font-size:13.5px;">
                     Every pavilion at MANARA Medical Complex connects seamlessly to one audited clinical truth — uniting outpatient consultants, radiology, dual-verified laboratory diagnostics, and personalized recovery follow-up.
@@ -88,12 +87,12 @@
 
         <div class="editorial-row">
             <div>
-                <span class="pill-tag">Our Heritage</span>
+                <div class="editorial-kicker">Our Heritage</div>
                 <h2 class="serif-display editorial-heading">Alexandrian Coastline Elegance &amp; Timeless Trust</h2>
                 <p style="color:var(--slate);font-size:13.5px;margin-bottom:22px;">
                     Inspired by coastal limestone arcades and the enduring beacon of the Mediterranean lighthouse, MANARA pairs serene architecture with uncompromising clinical rigor.
                 </p>
-                <a class="btn btn-navy" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Explore 8 Clinical Departments</a>
+                <a class="btn btn-navy" asp-controller="Home" asp-action="Departments" style="text-decoration:none;">Explore @Model.Departments.Count Clinical Departments</a>
             </div>
             <div class="editorial-photo-wrap right-align">
                 <img src="@Url.Content("~/assets/manara/consult-atrium.jpg")" alt="Senior physician consulting in hospital atrium" class="editorial-photo" />
@@ -110,8 +109,8 @@
 <!-- Hairline-Divided Services List -->
 <section class="services-band">
     <div class="container">
-        <span class="pill-tag">Departments &amp; Centers</span>
-        <h2 class="serif-display services-heading">Eight Integrated Clinical Centers Designed Around Your Recovery</h2>
+        <div class="editorial-kicker">Departments &amp; Centers</div>
+        <h2 class="serif-display services-heading">Integrated Clinical Centers Designed Around Your Recovery</h2>
         <div>
             @foreach (var dept in Model.Departments)
             {
@@ -137,8 +136,8 @@
     <div class="container">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;">
             <div>
-                <span class="pill-tag">Medical Faculty</span>
-                <h2 class="serif-display" style="font-size:34px;margin-top:12px;">Board-Certified Specialists</h2>
+                <div class="editorial-kicker">Medical Faculty</div>
+                <h2 class="serif-display" style="font-size:34px;margin-top:8px;">Board-Certified Specialists</h2>
             </div>
             <div class="doc-carousel-controls">
                 <button type="button" class="carousel-arrow-btn" id="docPrevBtn" aria-label="Previous specialists">
@@ -147,7 +146,7 @@
                 <button type="button" class="carousel-arrow-btn" id="docNextBtn" aria-label="Next specialists">
                     <partial name="_Icon" model="@("chevron-right")" />
                 </button>
-                <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">View All 16 Doctors</a>
+                <a class="btn btn-outline btn-sm" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">View All @Model.Departments.Sum(d => d.Doctors.Count) Doctors</a>
             </div>
         </div>
 
@@ -212,6 +211,7 @@
 
                             <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;"
                                     data-book-dept="@(doc.DepartmentName ?? doc.SpecializationName)"
+                                    data-book-dept-id="@doc.DepartmentId"
                                     data-book-doc="Dr. @doc.FirstName @doc.LastName"
                                     data-book-doc-id="@doc.Id"
                                     data-book-fee="@doc.SessionPrice.ToString("0")"
@@ -230,8 +230,8 @@
 <section class="testimonials-band">
     <div class="container">
         <div class="testimonials-box">
-            <span class="pill-tag">Patient Voices</span>
-            <h2 class="serif-display" style="font-size:34px;max-width:620px;margin:14px auto 0;">Trusted By Families Across Alexandria &amp; Cairo</h2>
+            <div class="editorial-kicker">Patient Voices</div>
+            <h2 class="serif-display" style="font-size:34px;max-width:620px;margin:10px auto 0;">Trusted By Families Across Alexandria &amp; Cairo</h2>
             <div class="testimonials-grid">
                 <div>
                     <div class="quote-author">Ahmed Hassan</div>

@@ -1,20 +1,46 @@
 @{
-    ViewData["Title"] = "Privacy information";
+    ViewData["Title"] = "Privacy & Patient Data Stewardship";
 }
-<section class="container legal-copy">
-    <span class="eyebrow">Project information</span>
-    <h1>Privacy and data use</h1>
-    <div class="notice-placeholder"><strong>Deployment notice required.</strong> This repository is a software demonstration, not a completed privacy notice or legal assessment.</div>
 
-    <h2>What the application can process</h2>
-    <p>The application includes account details, appointment requests, clinician schedules, medical-record fields, and operational audit metadata. Depending on deployment configuration, data may be stored in SQL Server, encrypted in a Hangfire email queue, and written to application logs. Do not enter real patient or production data into an unreviewed instance.</p>
+<section class="legal-page-band">
+    <div class="container">
+        <div class="legal-card">
+            <div class="editorial-kicker">Alexandria Coastal Sanctuary &bull; Confidentiality Charter</div>
+            <h1 class="serif-display legal-title">Privacy &amp; Patient Data Stewardship</h1>
+            <p class="legal-lead">
+                At MANARA Medical Complex, patient confidentiality is foundational to compassionate care. Every consultation record, diagnostic panel, imaging report, and account notification is handled under strict role-based medical confidentiality.
+            </p>
 
-    <h2>Who is responsible</h2>
-    <p>The organization deploying and operating an instance must identify the applicable data controller or provider, explain the purpose and legal basis for processing, define retention and deletion periods, document vendors and transfers, provide a contact for privacy requests, and publish a jurisdiction-appropriate notice before collecting personal information.</p>
+            <div class="legal-sections">
+                <section class="legal-block">
+                    <h2>1. Medical Confidentiality &amp; Access Controls</h2>
+                    <p>
+                        Clinical histories, laboratory panels, radiology PACS studies, and attending physician notes are accessible solely to authorized clinical staff directly involved in your care and to your verified patient account. Laboratory and diagnostic reports remain held until specialist verification and release are completed.
+                    </p>
+                </section>
 
-    <h2>Technical controls are not a legal conclusion</h2>
-    <p>Authentication, authorization, audit metadata, transport settings, and other code-level safeguards do not by themselves establish HIPAA, GDPR, or any other regulatory compliance. Independent legal, privacy, security, and operational review is required for a real deployment.</p>
+                <section class="legal-block">
+                    <h2>2. Information Collected for Care Continuity</h2>
+                    <p>
+                        To coordinate outpatient visits, returning follow-up discounts, prescriptions, and specialist consultation replies, MANARA stores patient demographic contact information, scheduled clinic slots, vitals, signed diagnoses, and notification delivery logs in our encrypted hospital database.
+                    </p>
+                </section>
 
-    <h2>Questions</h2>
-    <p>This source repository does not provide a staffed support or privacy contact. Contact the administrator of the specific deployment through its established channel.</p>
+                <section class="legal-block">
+                    <h2>3. Notification &amp; Communication Preferences</h2>
+                    <p>
+                        Patients maintain direct control over automated laboratory, radiology, prescription, appointment, and doctor-reply alerts through <a asp-controller="Account" asp-action="Settings">Settings &amp; Preferences</a>. You may adjust accessibility preferences and email notification categories at any time.
+                    </p>
+                </section>
+
+                <section class="legal-block">
+                    <h2>4. Privacy Desk &amp; Data Inquiries</h2>
+                    <p>
+                        Questions regarding medical records access, profile verification, or correction of demographic details may be submitted via our <a asp-controller="Consult" asp-action="Index">Consult &amp; Feedback</a> desk or in person at MANARA Cornish Pavilion Reception in Alexandria.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
 </section>
+

@@ -25,7 +25,7 @@ public sealed class HomeController : Controller
 
     private async Task<MainVm> BuildDirectoryModelAsync(string? deptFilter = null)
     {
-        var allDoctors = _doctorService.GetPublicDoctorProfiles(32);
+        var allDoctors = _doctorService.GetPublicDoctorProfiles(100);
         var departments = await _dbContext.Departments.AsNoTracking()
             .Where(d => d.IsActive)
             .OrderBy(d => d.Id)

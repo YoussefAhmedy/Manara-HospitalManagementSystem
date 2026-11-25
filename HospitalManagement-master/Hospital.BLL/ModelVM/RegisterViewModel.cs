@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -45,7 +45,7 @@ namespace Hospital.BLL.ModelVM
         [Required(ErrorMessage = "Date of Birth is required.")]
         [DataType(DataType.Date)]
         [Display(Name = "Date of Birth")]
-        public DateTime DateOfBirth { get; set; } = DateTime.Today.AddYears(-25);
+        public DateTime? DateOfBirth { get; set; }
 
         [Required(ErrorMessage = "Gender is required.")]
         public string Gender { get; set; } = string.Empty;

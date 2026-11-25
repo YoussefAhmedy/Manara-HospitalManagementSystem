@@ -3,24 +3,46 @@ using Hospital.BLL.Common;
 using Hospital.BLL.Helpers;
 using Hospital.BLL.Permissions;
 using Hospital.BLL.Services.Abstraction;
+using Hospital.DAL.DataBase;
 using Hospital.DAL.Entities.OwnedTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HospitalManagement.Controllers;
 
+public sealed class DashboardBookingItem
+{
+    public int AppointmentId { get; init; }
+    public string Number { get; init; } = string.Empty;
+    public DateTime Date { get; init; }
+    public int SlotMinutes { get; init; }
+    public string PatientId { get; init; } = string.Empty;
+    public string PatientName { get; init; } = string.Empty;
+    public string Mrn { get; init; } = string.Empty;
+    public string DoctorId { get; init; } = string.Empty;
+    public string DoctorName { get; init; } = string.Empty;
+    public string DepartmentName { get; init; } = "General";
+    public bool IsFollowUp { get; init; }
+    public string Notes { get; init; } = string.Empty;
+    public AppointStatus Status { get; init; }
+    public int? EncounterId { get; init; }
+}
+
 /// <summary>
-/// The landing workspace. The controller routes each signed-in identity to the workspace
-/// that matches its operational role; every figure comes from a live query.
+/// Staff-only operational landing workspace. Patients are strictly excluded from accessing /Dashboard
+/// and remain exclusively in the MANARA public portal & patient care experience.
 /// </summary>
-[Authorize]
+[Authorize(Roles = "Admin,HospitalAdmin,SuperAdmin,Management,Doctor,Receptionist,LabTechnician,Radiologist,Pharmacist,BillingOfficer,Nurse,Auditor")]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class DashboardController(
     IWorkspaceService workspace,
     IAppointmentSchedulingService scheduling,
     IEncounterService encounters,
     ILabService lab,
     IAdmissionService admissions,
-    IReportService reports) : Controller
+    IReportService reports,
+    HospitalDbContext dbContext) : Controller
 {
     private string CurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
@@ -29,18 +51,58 @@ public sealed class DashboardController(
         ViewData["Title"] = "Overview";
         ViewData["Section"] = "Workspace";
 
-        if (User.IsInRole(nameof(Role.Patient)))
-        {
-            return RedirectToAction("Index", "Patient");
-        }
-
         if (User.IsInRole(nameof(Role.Doctor)))
         {
-            var kpis = await workspace.DoctorAsync(CurrentUserId(), cancellationToken);
+            var doctorId = CurrentUserId();
+            var kpis = await workspace.DoctorAsync(doctorId, cancellationToken);
             var queue = await scheduling.QueueAsync(DateTime.UtcNow.Date, cancellationToken);
-            ViewData["Subtitle"] = "Your clinic at a glance: today's list, waiting patients and open documentation.";
+
+            var doctorAppointmentsRaw = await dbContext.Appointments.AsNoTracking()
+                .Include(a => a.Patient)
+                .Include(a => a.Doctor).ThenInclude(d => d!.Department)
+                .Include(a => a.Doctor).ThenInclude(d => d!.Specialization)
+                .Where(a => a.DoctorID == doctorId && a.Status != AppointStatus.Cancelled && a.Status != AppointStatus.NotApproved)
+                .OrderByDescending(a => a.AppointmentDate >= DateTime.UtcNow.Date)
+                .ThenBy(a => a.AppointmentDate)
+                .ThenBy(a => a.SlotMinutes)
+                .Take(16)
+                .ToListAsync(cancellationToken);
+
+            var patientIds = doctorAppointmentsRaw.Select(a => a.PatientID).Distinct().ToList();
+            var priorCompletedPatientIds = (await dbContext.Appointments.AsNoTracking()
+                .Where(a => a.DoctorID == doctorId && patientIds.Contains(a.PatientID) && a.Status == AppointStatus.Completed)
+                .Select(a => a.PatientID)
+                .Distinct()
+                .ToListAsync(cancellationToken)).ToHashSet();
+
+            var encounterByPatient = await dbContext.Encounters.AsNoTracking()
+                .Where(e => e.DoctorId == doctorId && patientIds.Contains(e.PatientId))
+                .OrderByDescending(e => e.RegisteredAtUtc)
+                .Select(e => new { e.PatientId, e.Id })
+                .ToListAsync(cancellationToken);
+
+            var doctorBookings = doctorAppointmentsRaw.Select(a => new DashboardBookingItem
+            {
+                AppointmentId = a.AppointmentID,
+                Number = a.Number,
+                Date = a.AppointmentDate,
+                SlotMinutes = a.SlotMinutes,
+                PatientId = a.PatientID,
+                PatientName = a.Patient != null ? $"{a.Patient.FirstName} {a.Patient.LastName}".Trim() : "Patient",
+                Mrn = a.Patient?.Mrn ?? "—",
+                DoctorId = a.DoctorID ?? doctorId,
+                DoctorName = a.Doctor != null ? $"Dr. {a.Doctor.FirstName} {a.Doctor.LastName}" : "Attending",
+                DepartmentName = a.Doctor?.Department?.Name ?? a.Doctor?.Specialization?.Name ?? "Outpatient",
+                IsFollowUp = priorCompletedPatientIds.Contains(a.PatientID) && a.Status != AppointStatus.Completed,
+                Notes = a.Notes ?? "",
+                Status = a.Status,
+                EncounterId = encounterByPatient.FirstOrDefault(e => e.PatientId == a.PatientID)?.Id
+            }).ToList();
+
+            ViewData["Subtitle"] = "Your clinic schedule: strictly patients booked with you, clinical notes, and encounter links.";
             ViewBag.Kpis = kpis;
             ViewBag.Queue = queue;
+            ViewBag.DoctorBookings = doctorBookings;
             return View("Clinician");
         }
 
@@ -76,7 +138,7 @@ public sealed class DashboardController(
             return View("Reception");
         }
 
-        // Administration, management and auditor share the operational overview.
+        // Administration, management and auditor share the operational overview + full bookings ledger.
         ViewBag.Kpis = await workspace.AdminAsync(cancellationToken);
         ViewBag.Occupancy = await admissions.SummaryAsync(cancellationToken);
         ViewBag.Recent = await workspace.RecentActivityAsync(8, cancellationToken);
@@ -84,7 +146,42 @@ public sealed class DashboardController(
         ViewBag.AppointmentOutcomes = month;
         var revenue = await reports.RunAsync("revenue", new ReportFilter(DateRange.LastDays(14, DateOnly.FromDateTime(DateTime.UtcNow))), cancellationToken);
         ViewBag.Revenue = revenue;
-        ViewData["Subtitle"] = "Operational posture across admissions, diagnostics, revenue and documentation.";
+
+        var ledgerRaw = await dbContext.Appointments.AsNoTracking()
+            .Include(a => a.Patient)
+            .Include(a => a.Doctor).ThenInclude(d => d!.Department)
+            .Include(a => a.Doctor).ThenInclude(d => d!.Specialization)
+            .OrderByDescending(a => a.AppointmentDate)
+            .ThenBy(a => a.SlotMinutes)
+            .Take(12)
+            .ToListAsync(cancellationToken);
+
+        var completedPairs = (await dbContext.Appointments.AsNoTracking()
+            .Where(a => a.Status == AppointStatus.Completed && a.DoctorID != null)
+            .Select(a => new { a.PatientID, DoctorId = a.DoctorID! })
+            .Distinct()
+            .ToListAsync(cancellationToken))
+            .Select(x => $"{x.PatientID}:{x.DoctorId}")
+            .ToHashSet();
+
+        ViewBag.BookingsLedger = ledgerRaw.Select(a => new DashboardBookingItem
+        {
+            AppointmentId = a.AppointmentID,
+            Number = a.Number,
+            Date = a.AppointmentDate,
+            SlotMinutes = a.SlotMinutes,
+            PatientId = a.PatientID,
+            PatientName = a.Patient != null ? $"{a.Patient.FirstName} {a.Patient.LastName}".Trim() : "Patient",
+            Mrn = a.Patient?.Mrn ?? "—",
+            DoctorId = a.DoctorID ?? "",
+            DoctorName = a.Doctor != null ? $"Dr. {a.Doctor.FirstName} {a.Doctor.LastName}".Trim() : "Unassigned",
+            DepartmentName = a.Doctor?.Department?.Name ?? a.Doctor?.Specialization?.Name ?? "General",
+            IsFollowUp = a.DoctorID != null && completedPairs.Contains($"{a.PatientID}:{a.DoctorID}") && a.Status != AppointStatus.Completed,
+            Notes = a.Notes ?? "",
+            Status = a.Status
+        }).ToList();
+
+        ViewData["Subtitle"] = "Operational posture across admissions, bookings ledger, diagnostics, and governance.";
         return View("Operations");
     }
 

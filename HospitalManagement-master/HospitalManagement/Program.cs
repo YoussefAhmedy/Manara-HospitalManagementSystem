@@ -100,7 +100,13 @@ public class Program
 
         builder.Services.AddHangfire(configuration =>
             configuration.UseSqlServerStorage(connectionString));
-        builder.Services.AddHangfireServer();
+        builder.Services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = 2;
+            options.SchedulePollingInterval = TimeSpan.FromMinutes(2);
+            options.HeartbeatInterval = TimeSpan.FromMinutes(5);
+            options.ServerCheckInterval = TimeSpan.FromMinutes(5);
+        });
 
         builder.Services
             .AddOptions<EmailOptions>()
@@ -155,7 +161,7 @@ public class Program
 
         builder.Services.ConfigureApplicationCookie(options =>
         {
-            options.Cookie.Name = "CareAxis.Session";
+            options.Cookie.Name = "Manara.Auth.v2";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Lax;
@@ -165,10 +171,15 @@ public class Program
             options.AccessDeniedPath = "/Account/AccessDenied";
         });
 
+        builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+        {
+            options.ValidationInterval = TimeSpan.FromMinutes(1);
+        });
+
         builder.Services.AddAntiforgery(options =>
         {
             options.HeaderName = "RequestVerificationToken";
-            options.Cookie.Name = "CareAxis.AntiForgery";
+            options.Cookie.Name = "Manara.AntiForgery.v2";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
@@ -272,7 +283,10 @@ public class Program
         builder.Services.AddScoped<IDemoDataSeeder, DemoDataSeeder>();
         builder.Services.AddScoped<IOrganizationDirectoryService, OrganizationDirectoryService>();
         builder.Services.AddScoped<IImagingService, ImagingService>();
+        builder.Services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+        builder.Services.AddScoped<IMedicalAssistantService, MedicalAssistantService>();
         builder.Services.AddTransient<Microsoft.AspNetCore.Authentication.IClaimsTransformation, PermissionClaimsTransformation>();
+        builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ManaraClaimsPrincipalFactory>();
 
         await using var app = builder.Build();
         app.UseForwardedHeaders();
@@ -334,7 +348,9 @@ public class Program
                     context.Request.Path.StartsWithSegments("/Reports") ||
                     context.Request.Path.StartsWithSegments("/Audit") ||
                     context.Request.Path.StartsWithSegments("/Dashboard") ||
-                    context.Request.Path.StartsWithSegments("/Account/Profile"))
+                    context.Request.Path.StartsWithSegments("/Updates") ||
+                    context.Request.Path.StartsWithSegments("/Account/Profile") ||
+                    context.Request.Path.StartsWithSegments("/Account/Settings"))
                 {
                     headers.CacheControl = "no-store, private";
                     headers.Pragma = "no-cache";

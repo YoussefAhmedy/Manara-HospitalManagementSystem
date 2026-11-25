@@ -7,8 +7,8 @@
 
 <section class="services-band" style="padding-top:48px;padding-bottom:76px;">
     <div class="container">
-        <span class="pill-tag">Departments-First Directory</span>
-        <h1 class="serif-display services-heading" style="margin-bottom:14px;">Our Eight Specialized Medical Departments</h1>
+        <div class="editorial-kicker">Clinical Specialties &amp; Units</div>
+        <h1 class="serif-display services-heading" style="margin-bottom:14px;">Our Specialized Medical Departments</h1>
         <p style="color:var(--slate);max-width:720px;margin-bottom:28px;">
             Explore what each department treats, its advanced diagnostic capabilities, pavilion location, and the dedicated consultant specialists serving each discipline.
         </p>
@@ -55,6 +55,7 @@
                                 </div>
                                 <button type="button" class="btn btn-navy btn-xs"
                                         data-book-dept="@dept.Name"
+                                        data-book-dept-id="@dept.Id"
                                         data-book-doc="Dr. @doc.FirstName @doc.LastName"
                                         data-book-doc-id="@doc.Id"
                                         data-book-fee="@doc.SessionPrice.ToString("0")"

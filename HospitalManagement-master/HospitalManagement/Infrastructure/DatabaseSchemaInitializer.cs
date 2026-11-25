@@ -89,6 +89,94 @@ public static class DatabaseSchemaInitializer
             IF COL_LENGTH('dbo.Departments', 'Description') IS NULL ALTER TABLE dbo.Departments ADD Description nvarchar(500) NULL;
             IF COL_LENGTH('dbo.Departments', 'Capabilities') IS NULL ALTER TABLE dbo.Departments ADD Capabilities nvarchar(300) NULL;
             IF COL_LENGTH('dbo.Departments', 'FloorLocation') IS NULL ALTER TABLE dbo.Departments ADD FloorLocation nvarchar(60) NULL;
+
+            IF COL_LENGTH('dbo.AspNetUsers', 'EmailNotifyLabs') IS NULL ALTER TABLE dbo.AspNetUsers ADD EmailNotifyLabs bit NOT NULL CONSTRAINT DF_AspNetUsers_NotifyLabs DEFAULT 1;
+            IF COL_LENGTH('dbo.AspNetUsers', 'EmailNotifyPrescriptions') IS NULL ALTER TABLE dbo.AspNetUsers ADD EmailNotifyPrescriptions bit NOT NULL CONSTRAINT DF_AspNetUsers_NotifyRx DEFAULT 1;
+            IF COL_LENGTH('dbo.AspNetUsers', 'EmailNotifyAppointments') IS NULL ALTER TABLE dbo.AspNetUsers ADD EmailNotifyAppointments bit NOT NULL CONSTRAINT DF_AspNetUsers_NotifyAppt DEFAULT 1;
+            IF COL_LENGTH('dbo.AspNetUsers', 'EmailNotifyReplies') IS NULL ALTER TABLE dbo.AspNetUsers ADD EmailNotifyReplies bit NOT NULL CONSTRAINT DF_AspNetUsers_NotifyReplies DEFAULT 1;
+            IF COL_LENGTH('dbo.AspNetUsers', 'UiFontSize') IS NULL ALTER TABLE dbo.AspNetUsers ADD UiFontSize nvarchar(16) NOT NULL CONSTRAINT DF_AspNetUsers_Font DEFAULT 'default';
+            IF COL_LENGTH('dbo.AspNetUsers', 'UiDensity') IS NULL ALTER TABLE dbo.AspNetUsers ADD UiDensity nvarchar(16) NOT NULL CONSTRAINT DF_AspNetUsers_Density DEFAULT 'comfortable';
+            IF COL_LENGTH('dbo.AspNetUsers', 'UiReducedMotion') IS NULL ALTER TABLE dbo.AspNetUsers ADD UiReducedMotion bit NOT NULL CONSTRAINT DF_AspNetUsers_Motion DEFAULT 0;
+
+            IF OBJECT_ID('dbo.ConsultationInquiries', 'U') IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM sys.columns c
+                    JOIN sys.types t ON c.user_type_id = t.user_type_id
+                    WHERE c.object_id = OBJECT_ID('dbo.ConsultationInquiries')
+                      AND c.name = 'DoctorId'
+                      AND t.name = 'int'
+                )
+                DROP TABLE dbo.ConsultationInquiries;
+
+            IF OBJECT_ID('dbo.ConsultationInquiries', 'U') IS NULL
+                CREATE TABLE dbo.ConsultationInquiries (
+                    Id int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    PatientUserId nvarchar(450) NULL,
+                    PatientId nvarchar(450) NULL,
+                    PatientName nvarchar(120) NOT NULL,
+                    PatientEmail nvarchar(160) NOT NULL,
+                    DepartmentId int NULL,
+                    DoctorId nvarchar(450) NULL,
+                    Subject nvarchar(180) NOT NULL,
+                    Question nvarchar(2000) NOT NULL,
+                    Status nvarchar(32) NOT NULL,
+                    DoctorReply nvarchar(2000) NULL,
+                    RepliedByUserId nvarchar(64) NULL,
+                    RepliedByName nvarchar(120) NULL,
+                    RepliedAt datetime2 NULL,
+                    PatientNotifiedByEmail bit NOT NULL CONSTRAINT DF_ConsultInq_Notified DEFAULT 0,
+                    IsReadByPatient bit NOT NULL CONSTRAINT DF_ConsultInq_Read DEFAULT 0,
+                    CreatedAt datetime2 NOT NULL CONSTRAINT DF_ConsultInq_Created DEFAULT SYSUTCDATETIME()
+                );
+
+            IF OBJECT_ID('dbo.PlatformFeedbacks', 'U') IS NULL
+                CREATE TABLE dbo.PlatformFeedbacks (
+                    Id int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    UserId nvarchar(64) NULL,
+                    AuthorName nvarchar(120) NOT NULL,
+                    AuthorEmail nvarchar(160) NOT NULL,
+                    Category nvarchar(32) NOT NULL,
+                    TargetScope nvarchar(32) NOT NULL,
+                    TargetDoctorId int NULL,
+                    TargetName nvarchar(120) NULL,
+                    Rating int NULL,
+                    Subject nvarchar(180) NOT NULL,
+                    Message nvarchar(2000) NOT NULL,
+                    Status nvarchar(32) NOT NULL,
+                    ManagerNotes nvarchar(1000) NULL,
+                    CreatedAt datetime2 NOT NULL CONSTRAINT DF_PlatformFb_Created DEFAULT SYSUTCDATETIME(),
+                    ReviewedAt datetime2 NULL
+                );
+
+            IF OBJECT_ID('dbo.EmailNotificationLogs', 'U') IS NULL
+                CREATE TABLE dbo.EmailNotificationLogs (
+                    Id int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    RecipientUserId nvarchar(64) NOT NULL,
+                    RecipientEmail nvarchar(160) NOT NULL,
+                    RecipientName nvarchar(120) NOT NULL,
+                    Category nvarchar(40) NOT NULL,
+                    Subject nvarchar(200) NOT NULL,
+                    BodySummary nvarchar(1500) NOT NULL,
+                    ActionUrl nvarchar(300) NULL,
+                    SentViaSmtp bit NOT NULL CONSTRAINT DF_EmailLog_Smtp DEFAULT 0,
+                    DeliveryStatus nvarchar(40) NOT NULL,
+                    IsRead bit NOT NULL CONSTRAINT DF_EmailLog_Read DEFAULT 0,
+                    CreatedAt datetime2 NOT NULL CONSTRAINT DF_EmailLog_Created DEFAULT SYSUTCDATETIME()
+                );
+
+            BEGIN TRY
+                IF DATABASEPROPERTYEX(DB_NAME(), 'IsAutoClose') = 1
+                    EXEC('ALTER DATABASE CURRENT SET AUTO_CLOSE OFF');
+            END TRY
+            BEGIN CATCH
+            END CATCH
+
+            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PlatformFeedbacks_Cat_Created' AND object_id = OBJECT_ID('dbo.PlatformFeedbacks'))
+                CREATE INDEX IX_PlatformFeedbacks_Cat_Created ON dbo.PlatformFeedbacks (Category, CreatedAt DESC);
+            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_EmailLogs_User_Read' AND object_id = OBJECT_ID('dbo.EmailNotificationLogs'))
+                CREATE INDEX IX_EmailLogs_User_Read ON dbo.EmailNotificationLogs (RecipientUserId, IsRead);
+            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ConsultInquiries_User_Status' AND object_id = OBJECT_ID('dbo.ConsultationInquiries'))
+                CREATE INDEX IX_ConsultInquiries_User_Status ON dbo.ConsultationInquiries (PatientUserId, Status);
             """;
         await dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }

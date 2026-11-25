@@ -6,6 +6,7 @@ using Hospital.BLL.Helpers;
 using Hospital.BLL.ModelVM;
 using Hospital.BLL.Notifications;
 using Hospital.BLL.Services.Abstraction;
+using Hospital.DAL.DataBase;
 using Hospital.DAL.Entities;
 using HospitalManagement.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HospitalManagement.Controllers;
 
@@ -27,6 +29,7 @@ public sealed class AccountController : Controller
     private readonly IAuditLogger _auditLogger;
     private readonly IProfileImageStorage _profileImages;
     private readonly IWebHostEnvironment _environment;
+    private readonly HospitalDbContext _dbContext;
 
     public AccountController(
         IMapper mapper,
@@ -36,7 +39,8 @@ public sealed class AccountController : Controller
         ILogger<AccountController> logger,
         IAuditLogger auditLogger,
         IProfileImageStorage profileImages,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        HospitalDbContext dbContext)
     {
         _mapper = mapper;
         _emailQueue = emailQueue;
@@ -46,12 +50,20 @@ public sealed class AccountController : Controller
         _auditLogger = auditLogger;
         _profileImages = profileImages;
         _environment = environment;
+        _dbContext = dbContext;
+    }
+
+    private async Task PopulateAuthViewDataAsync()
+    {
+        ViewBag.SpecialistCount = await _dbContext.Doctors.AsNoTracking().CountAsync(d => d.IsActive);
     }
 
     [HttpGet]
     [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Register()
     {
+        await PopulateAuthViewDataAsync();
         var model = new RegisterViewModel
         {
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
@@ -66,6 +78,7 @@ public sealed class AccountController : Controller
     {
         if (!ModelState.IsValid)
         {
+            await PopulateAuthViewDataAsync();
             model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             return View(model);
         }
@@ -184,8 +197,10 @@ public sealed class AccountController : Controller
 
     [HttpGet]
     [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> LogIn(string? returnUrl)
     {
+        await PopulateAuthViewDataAsync();
         var model = new LogInViewModel { ReturnUrl = returnUrl };
         model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         return View(model);
@@ -198,6 +213,7 @@ public sealed class AccountController : Controller
     {
         if (!ModelState.IsValid)
         {
+            await PopulateAuthViewDataAsync();
             model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             return View(model);
         }
@@ -226,7 +242,19 @@ public sealed class AccountController : Controller
             user?.Id,
             user is null ? null : "user",
             user?.Id);
-        ModelState.AddModelError(string.Empty, "Email or password was not accepted. Check your details and try again.");
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty, "This account is temporarily locked due to multiple failed sign-in attempts. Please wait 15 minutes and try again.");
+        }
+        else if (result.IsNotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Please confirm your email address before signing in.");
+        }
+        else
+        {
+            ModelState.AddModelError(string.Empty, "Email or password was not accepted. Check your details and try again.");
+        }
+        await PopulateAuthViewDataAsync();
         model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         return View(model);
     }
@@ -460,6 +488,7 @@ public sealed class AccountController : Controller
 
     [HttpPost]
     [Authorize]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> LogOut()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -469,12 +498,38 @@ public sealed class AccountController : Controller
         }
 
         await _signInManager.SignOutAsync();
+
+        var cookieOpts = new CookieOptions { Path = "/", HttpOnly = true, IsEssential = true };
+        foreach (var cookieName in new[]
+        {
+            "Manara.Auth.v2",
+            ".AspNetCore.Identity.Application",
+            "Identity.External",
+            "Identity.TwoFactorUserId",
+            "Manara.AntiForgery.v2",
+            ".AspNetCore.Session"
+        })
+        {
+            Response.Cookies.Delete(cookieName, cookieOpts);
+        }
+
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+        Response.Headers["Pragma"] = "no-cache";
         return RedirectToAction("Index", "Home");
     }
 
+    private bool IsPatientOnlyUser() =>
+        User.IsInRole(nameof(Role.Patient)) &&
+        !User.IsInRole(nameof(Role.Admin)) &&
+        !User.IsInRole(nameof(Role.HospitalAdmin)) &&
+        !User.IsInRole(nameof(Role.SuperAdmin)) &&
+        !User.IsInRole(nameof(Role.Management)) &&
+        !User.IsInRole(nameof(Role.Doctor));
+
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> Profile()
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Profile(string? ctx = null)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId))
@@ -488,13 +543,15 @@ public sealed class AccountController : Controller
             return NotFound();
         }
 
+        ViewBag.UseWorkspaceLayout = string.Equals(ctx, "ws", StringComparison.OrdinalIgnoreCase) && !IsPatientOnlyUser();
         return View(_mapper.Map<EditProfileVm>(user));
     }
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> EditProfile(EditProfileVm model, IFormFile? imageFile, CancellationToken cancellationToken)
+    public async Task<IActionResult> EditProfile(EditProfileVm model, IFormFile? imageFile, string? ctx = null, CancellationToken cancellationToken = default)
     {
+        ViewBag.UseWorkspaceLayout = string.Equals(ctx, "ws", StringComparison.OrdinalIgnoreCase) && !IsPatientOnlyUser();
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId))
         {
@@ -525,11 +582,17 @@ public sealed class AccountController : Controller
 
         user.FirstName = model.FirstName.Trim();
         user.LastName = model.LastName.Trim();
-        user.PhoneNumber = model.PhoneNumber?.Trim();
-        user.DateOfBirth = model.DateOfBirth;
-        user.Gender = model.Gender;
+        user.PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim();
+        user.DateOfBirth = model.DateOfBirth.HasValue && model.DateOfBirth.Value.Year > 1900
+            ? model.DateOfBirth.Value.Date
+            : null;
+        if (!string.IsNullOrWhiteSpace(model.Gender))
+        {
+            user.Gender = model.Gender.Trim();
+        }
 
-        if (!string.Equals(model.Email?.Trim(), user.Email, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(model.Email?.Trim(), user.Email, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(model.Email))
         {
             var requestedEmail = model.Email.Trim();
             var existingUser = await _userManager.FindByEmailAsync(requestedEmail);
@@ -564,29 +627,72 @@ public sealed class AccountController : Controller
         await _signInManager.RefreshSignInAsync(user);
         await _auditLogger.RecordAsync("account.profile-updated", user.Id, user.Id, "user", user.Id, cancellationToken);
         TempData["StatusMessage"] ??= "Your profile was updated.";
-        return RedirectToAction(nameof(Profile));
+        return RedirectToAction(nameof(Profile), new { ctx });
     }
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> Settings()
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Settings(string? ctx = null)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId)) return Challenge();
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null) return NotFound();
         var roles = await _userManager.GetRolesAsync(user);
+        var useWs = string.Equals(ctx, "ws", StringComparison.OrdinalIgnoreCase) && !IsPatientOnlyUser();
+
         return View(new SettingsVm
         {
             Profile = _mapper.Map<EditProfileVm>(user),
-            Roles = roles.ToList()
+            Roles = roles.ToList(),
+            UseWorkspaceLayout = useWs,
+            EmailNotifyLabs = user.EmailNotifyLabs,
+            EmailNotifyPrescriptions = user.EmailNotifyPrescriptions,
+            EmailNotifyAppointments = user.EmailNotifyAppointments,
+            EmailNotifyReplies = user.EmailNotifyReplies,
+            UiFontSize = string.IsNullOrWhiteSpace(user.UiFontSize) ? "default" : user.UiFontSize,
+            UiDensity = string.IsNullOrWhiteSpace(user.UiDensity) ? "comfortable" : user.UiDensity,
+            UiReducedMotion = user.UiReducedMotion
         });
     }
 
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangePassword(SettingsVm model)
+    public async Task<IActionResult> SavePreferences(SettingsVm model, string? ctx = null, CancellationToken cancellationToken = default)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Challenge();
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return NotFound();
+
+        user.EmailNotifyLabs = model.EmailNotifyLabs;
+        user.EmailNotifyPrescriptions = model.EmailNotifyPrescriptions;
+        user.EmailNotifyAppointments = model.EmailNotifyAppointments;
+        user.EmailNotifyReplies = model.EmailNotifyReplies;
+        user.UiFontSize = model.UiFontSize == "large" ? "large" : "default";
+        user.UiDensity = model.UiDensity == "compact" ? "compact" : "comfortable";
+        user.UiReducedMotion = model.UiReducedMotion;
+
+        var res = await _userManager.UpdateAsync(user);
+        if (!res.Succeeded)
+        {
+            TempData["ErrorMessage"] = "Could not save preferences.";
+        }
+        else
+        {
+            await _auditLogger.RecordAsync("account.preferences-updated", user.Id, user.Id, "user", user.Id, cancellationToken);
+            TempData["StatusMessage"] = "Notification & accessibility preferences saved.";
+        }
+
+        return RedirectToAction(nameof(Settings), new { ctx });
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(SettingsVm model, string? ctx = null)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId)) return Challenge();
@@ -596,26 +702,26 @@ public sealed class AccountController : Controller
         if (string.IsNullOrWhiteSpace(model.CurrentPassword) || string.IsNullOrWhiteSpace(model.NewPassword))
         {
             TempData["ErrorMessage"] = "Both current password and new password are required.";
-            return RedirectToAction(nameof(Settings));
+            return RedirectToAction(nameof(Settings), new { ctx });
         }
 
         if (model.NewPassword != model.ConfirmNewPassword)
         {
             TempData["ErrorMessage"] = "New password and confirmation do not match.";
-            return RedirectToAction(nameof(Settings));
+            return RedirectToAction(nameof(Settings), new { ctx });
         }
 
         var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
         if (!result.Succeeded)
         {
             TempData["ErrorMessage"] = string.Join(" ", result.Errors.Select(e => e.Description));
-            return RedirectToAction(nameof(Settings));
+            return RedirectToAction(nameof(Settings), new { ctx });
         }
 
         await _signInManager.RefreshSignInAsync(user);
         await _auditLogger.RecordAsync("account.password-changed", user.Id, user.Id, "user", user.Id);
         TempData["StatusMessage"] = "Password updated successfully.";
-        return RedirectToAction(nameof(Settings));
+        return RedirectToAction(nameof(Settings), new { ctx });
     }
 
     [HttpGet]
@@ -686,6 +792,7 @@ public sealed class AccountController : Controller
     }
 
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public IActionResult AccessDenied() => View();
 
     private async Task QueuePasswordResetAsync(string email)
@@ -715,9 +822,11 @@ public sealed class AccountController : Controller
     {
         if (await _userManager.IsInRoleAsync(user, Role.Patient.ToString()) &&
             !await _userManager.IsInRoleAsync(user, Role.Admin.ToString()) &&
+            !await _userManager.IsInRoleAsync(user, Role.HospitalAdmin.ToString()) &&
+            !await _userManager.IsInRoleAsync(user, Role.SuperAdmin.ToString()) &&
             !await _userManager.IsInRoleAsync(user, Role.Doctor.ToString()))
         {
-            return RedirectToAction("MyCare", "Patient");
+            return RedirectToAction("Index", "Updates");
         }
         return RedirectToAction("Index", "Dashboard");
     }

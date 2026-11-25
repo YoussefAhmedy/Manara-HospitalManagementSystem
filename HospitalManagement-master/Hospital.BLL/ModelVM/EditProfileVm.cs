@@ -1,51 +1,36 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hospital.BLL.ModelVM
 {
     public class EditProfileVm
     {
-        [Required(ErrorMessage = "your first name is required")]
-        [MaxLength(20, ErrorMessage = "must be less than 21")]
-        [MinLength(3, ErrorMessage = " must be greater than 2")]
-        [Display(Name = "Frist name")]
-        public string FirstName { get; set; }
+        [Required(ErrorMessage = "First name is required.")]
+        [MaxLength(40, ErrorMessage = "First name must be 40 characters or fewer.")]
+        [MinLength(2, ErrorMessage = "First name must be at least 2 characters.")]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Last name is required.")]
+        [MaxLength(40, ErrorMessage = "Last name must be 40 characters or fewer.")]
+        [MinLength(2, ErrorMessage = "Last name must be at least 2 characters.")]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "your last name is required")]
-        [MaxLength(20, ErrorMessage = "must be less than 21")]
-        [MinLength(3, ErrorMessage = " must be greater than 2")]
-        [Display(Name = "Last name")]
-        public string LastName { get; set; }
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        [Display(Name = "Email Address")]
+        public string Email { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "email is required")]
-        [EmailAddress(ErrorMessage = "invalid email")]
-        public string Email { get; set; }
+        [RegularExpression(@"^$|^(?:\+20|0)?(1[0125]\d{8})$", ErrorMessage = "Invalid Egyptian mobile number (leave empty if unchanged).")]
+        [Display(Name = "Phone Number")]
+        public string? PhoneNumber { get; set; }
 
-        [Required(ErrorMessage = "phone number is required")]
-        [RegularExpression(@"^(?:\+20|0)?(1[0125]\d{8})$", ErrorMessage = "invalid egyptian phone number")]
-        [Display(Name = "Phone")]
-        public string PhoneNumber { get; set; }
-
-
-        
-
-        [Required(ErrorMessage = "Date of Birth is required.")]
         [DataType(DataType.Date)]
-        [Display(Name = "Date of birth")]
-        public DateTime DateOfBirth { get; set; }
+        [Display(Name = "Date of Birth")]
+        public DateTime? DateOfBirth { get; set; }
 
-        [Required(ErrorMessage = "Gender is required.")]
-        public string Gender { get; set; }
+        public string? Gender { get; set; }
 
-        
-
-        
-
-        public string? Image {  get; set; }
+        public string? Image { get; set; }
     }
 }

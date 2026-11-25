@@ -1,77 +1,134 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @model RegisterViewModel
 @{
-    ViewData["Title"] = "Create Patient Account";
+    Layout = null;
+    ViewData["Title"] = "Create Patient Account — MANARA Medical Complex";
 }
-
-<section class="auth-dark-shell">
-    <div class="auth-dark-card">
-        <div class="auth-dark-brand">
-            <div class="auth-dark-logo">
-                <partial name="_ManaraLogo" model="26" />
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="alternate icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/manara-design-system.css" asp-append-version="true" />
+</head>
+<body class="auth-split-body">
+    <main class="auth-split-shell">
+        <section class="auth-split-left" aria-label="MANARA Sanctuary Visual">
+            <canvas class="auth-pixel-canvas" id="authPixelCanvas" aria-hidden="true"></canvas>
+            <a class="auth-split-brand" asp-controller="Home" asp-action="Index">
+                <partial name="_ManaraLogo" model="28" />
                 <span>MANARA</span>
-            </div>
-            <h1 class="auth-dark-title">Create your account</h1>
-            <p class="auth-dark-sub">Register as a patient to book visits, follow-ups, and access My Care</p>
-        </div>
+            </a>
 
-        <form asp-action="Register" asp-controller="Account" method="post" class="form-grid">
-            <div asp-validation-summary="All" class="validation-summary-errors form-field full" role="alert" style="color:var(--danger);font-size:12px;"></div>
+            <div class="auth-split-visual">
+                <div class="auth-pill-marquee" aria-hidden="true">
+                    <div class="auth-pill-track">
+                        <span class="auth-motion-pill">Cardiology &bull; 3T PACS</span>
+                        <span class="auth-motion-pill amber">Patient Updates Portal</span>
+                        <span class="auth-motion-pill">@(ViewBag.SpecialistCount ?? 45) Attending Specialists</span>
+                        <span class="auth-motion-pill amber">Alexandrian Sanctuary</span>
+                        <span class="auth-motion-pill">Cardiology &bull; 3T PACS</span>
+                        <span class="auth-motion-pill amber">Patient Updates Portal</span>
+                        <span class="auth-motion-pill">@(ViewBag.SpecialistCount ?? 45) Attending Specialists</span>
+                        <span class="auth-motion-pill amber">Alexandrian Sanctuary</span>
+                    </div>
+                </div>
 
-            <div class="form-field">
-                <label class="form-label" asp-for="FirstName">First Name</label>
-                <input class="auth-dark-input" asp-for="FirstName" autocomplete="given-name" />
-                <span asp-validation-for="FirstName" class="field-validation-error"></span>
-            </div>
-            <div class="form-field">
-                <label class="form-label" asp-for="LastName">Last Name</label>
-                <input class="auth-dark-input" asp-for="LastName" autocomplete="family-name" />
-                <span asp-validation-for="LastName" class="field-validation-error"></span>
-            </div>
-            <div class="form-field full">
-                <label class="form-label" asp-for="Email">Email</label>
-                <input class="auth-dark-input" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
-                <span asp-validation-for="Email" class="field-validation-error"></span>
-            </div>
-            <div class="form-field">
-                <label class="form-label" asp-for="PhoneNumber">Phone Number</label>
-                <input class="auth-dark-input" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
-                <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
-            </div>
-            <div class="form-field">
-                <label class="form-label" asp-for="Gender">Gender</label>
-                <select class="auth-dark-select" asp-for="Gender">
-                    <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-                <span asp-validation-for="Gender" class="field-validation-error"></span>
-            </div>
-            <div class="form-field">
-                <label class="form-label" asp-for="DateOfBirth">Date of Birth</label>
-                <input class="auth-dark-input" asp-for="DateOfBirth" type="date" autocomplete="bday" />
-                <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
-            </div>
-            <div class="form-field">
-                <label class="form-label" asp-for="Password">Password</label>
-                <input class="auth-dark-input" asp-for="Password" type="password" autocomplete="new-password" />
-                <span asp-validation-for="Password" class="field-validation-error"></span>
-            </div>
-            <div class="form-field full">
-                <label class="form-label" asp-for="ConfirmedPassword">Confirm Password</label>
-                <input class="auth-dark-input" asp-for="ConfirmedPassword" type="password" autocomplete="new-password" />
-                <span asp-validation-for="ConfirmedPassword" class="field-validation-error"></span>
+                <div class="auth-cutout-arch">
+                    <img class="auth-cutout-img" src="@Url.Content("~/assets/manara/sanctuary-3.jpg")" alt="MANARA Medical Complex Courtyard" />
+                </div>
+
+                <div class="auth-cutout-caption">
+                    <div class="auth-cutout-title">Begin Your Care Journey</div>
+                    <div class="auth-cutout-sub">Create your verified patient record for direct consultation Q&amp;A, lab releases, and reduced follow-up scheduling.</div>
+                </div>
             </div>
 
-            <div class="form-field full" style="margin-top:6px;">
-                <button class="auth-orchid-btn" type="submit">Create Patient Account</button>
+            <div class="auth-split-copyright">
+                &copy; @DateTime.UtcNow.Year MANARA Medical Complex &bull; Alexandria, Egypt
             </div>
-            <div class="form-field full" style="text-align:center;margin-top:6px;">
-                <a asp-controller="Account" asp-action="LogIn" style="font-size:12px;color:var(--slate-light);text-decoration:none;">Already have an account? Log in</a>
-            </div>
-        </form>
-    </div>
-</section>
+        </section>
 
-@section Scripts {
+        <section class="auth-split-right" aria-label="Registration Form">
+            <div class="auth-light-card">
+                <div class="auth-light-kicker">Patient Registration</div>
+                <h1 class="auth-light-title">Create your account</h1>
+                <p class="auth-light-sub">Register as a patient at MANARA Medical Complex.</p>
+
+                <form asp-action="Register" asp-controller="Account" method="post" class="form-grid">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="All" class="auth-light-alert error form-field full" role="alert"></div>
+                    }
+
+                    <div class="form-field">
+                        <label class="form-label" asp-for="FirstName">First Name</label>
+                        <input class="auth-light-input" asp-for="FirstName" autocomplete="given-name" />
+                        <span asp-validation-for="FirstName" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="LastName">Last Name</label>
+                        <input class="auth-light-input" asp-for="LastName" autocomplete="family-name" />
+                        <span asp-validation-for="LastName" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" asp-for="Email">Email Address</label>
+                        <input class="auth-light-input" asp-for="Email" type="email" autocomplete="email" inputmode="email" />
+                        <span asp-validation-for="Email" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="PhoneNumber">Phone Number</label>
+                        <input class="auth-light-input" asp-for="PhoneNumber" type="tel" autocomplete="tel" />
+                        <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="Gender">Gender</label>
+                        <select class="auth-light-select" asp-for="Gender">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="DateOfBirth">Date of Birth</label>
+                        <div class="auth-date-row">
+                            <input class="auth-light-input" asp-for="DateOfBirth" id="regDobInput" type="date" placeholder="dd/mm/yyyy" autocomplete="bday" />
+                            <button type="button" class="auth-date-clear" data-clear-date="regDobInput" aria-label="Clear Date of Birth" title="Clear date">&times; Clear</button>
+                        </div>
+                        <span asp-validation-for="DateOfBirth" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" asp-for="Password">Password</label>
+                        <input class="auth-light-input" asp-for="Password" type="password" autocomplete="new-password" />
+                        <span asp-validation-for="Password" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-field full">
+                        <label class="form-label" asp-for="ConfirmedPassword">Confirm Password</label>
+                        <input class="auth-light-input" asp-for="ConfirmedPassword" type="password" autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmedPassword" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="form-field full" style="margin-top:6px;">
+                        <button class="auth-royal-btn" type="submit">Create Patient Account</button>
+                    </div>
+                </form>
+
+                <div class="auth-light-footer-link">
+                    Already registered? <a asp-controller="Account" asp-action="LogIn">Log in to your account</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/js/manara-ui.js" asp-append-version="true"></script>
     <partial name="_ValidationScriptsPartial" />
-}
+</body>
+</html>

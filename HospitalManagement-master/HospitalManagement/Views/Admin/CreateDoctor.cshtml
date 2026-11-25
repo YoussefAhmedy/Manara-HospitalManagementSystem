@@ -88,7 +88,10 @@
 
                 <div class="form-field">
                     <label class="form-label" asp-for="DateOfBirth">Date of Birth</label>
-                    <input class="input" asp-for="DateOfBirth" type="date" required />
+                    <div class="auth-date-row">
+                        <input class="input" id="createDocDob" asp-for="DateOfBirth" type="date" required />
+                        <button type="button" class="auth-date-clear" data-clear-date="createDocDob" title="Clear date">&times;</button>
+                    </div>
                     <span asp-validation-for="DateOfBirth" class="text-danger"></span>
                 </div>
 

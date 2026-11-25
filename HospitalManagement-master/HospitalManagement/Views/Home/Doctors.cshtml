@@ -2,17 +2,18 @@
 @model MainVm
 @{
     ViewData["Title"] = "Our Specialist Physicians & Medical Faculty";
-    ViewData["Description"] = "Meet all 16 board-certified consultants across MANARA Medical Complex departments.";
+    ViewData["Description"] = "Meet all board-certified consultants across MANARA Medical Complex departments.";
     var selectedDept = ViewBag.SelectedDept as string;
+    var totalFacultyCount = Model.Departments.Sum(d => d.Doctors.Count);
 }
 
 <section class="doctors-band" style="padding-top:48px;padding-bottom:68px;">
     <div class="container">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
             <div>
-                <span class="pill-tag">Medical Faculty Directory</span>
-                <h1 class="serif-display" style="font-size:38px;margin-top:12px;margin-bottom:6px;">
-                    @(string.IsNullOrWhiteSpace(selectedDept) ? "All 16 Specialist Physicians" : $"{selectedDept} Specialists")
+                <div class="editorial-kicker">Board-Certified Consultants</div>
+                <h1 class="serif-display" style="font-size:38px;margin-top:8px;margin-bottom:6px;">
+                    @(string.IsNullOrWhiteSpace(selectedDept) ? $"All {totalFacultyCount} Specialist Physicians" : $"{selectedDept} Specialists")
                 </h1>
                 <p style="color:var(--slate);max-width:660px;">
                     Every physician features transparent Egyptian Pounds (EGP) consultation pricing and discounted returning follow-up consultations.
@@ -24,13 +25,13 @@
             }
         </div>
 
-        <!-- Department Quick Filter Pills -->
+        <!-- Department Quick Filter Buttons -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;">
-            <a class="btn @(string.IsNullOrWhiteSpace(selectedDept) ? "btn-navy" : "btn-outline") btn-xs" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">All (16)</a>
+            <a class="btn @(string.IsNullOrWhiteSpace(selectedDept) ? "btn-navy" : "btn-outline") btn-xs" asp-controller="Home" asp-action="Doctors" style="text-decoration:none;">All (@totalFacultyCount)</a>
             @foreach (var dept in Model.Departments)
             {
                 var isAct = string.Equals(selectedDept, dept.Name, StringComparison.OrdinalIgnoreCase);
-                <a class="btn @(isAct ? "btn-navy" : "btn-outline") btn-xs" asp-controller="Home" asp-action="Doctors" asp-route-dept="@dept.Name" style="text-decoration:none;">@dept.Name</a>
+                <a class="btn @(isAct ? "btn-navy" : "btn-outline") btn-xs" asp-controller="Home" asp-action="Doctors" asp-route-dept="@dept.Name" style="text-decoration:none;">@dept.Name (@dept.Doctors.Count)</a>
             }
         </div>
 
@@ -96,6 +97,7 @@
 
                         <button type="button" class="btn btn-navy btn-sm" style="margin-top:auto;width:100%;"
                                 data-book-dept="@(doc.DepartmentName ?? doc.SpecializationName)"
+                                data-book-dept-id="@doc.DepartmentId"
                                 data-book-doc="Dr. @doc.FirstName @doc.LastName"
                                 data-book-doc-id="@doc.Id"
                                 data-book-fee="@doc.SessionPrice.ToString("0")"
